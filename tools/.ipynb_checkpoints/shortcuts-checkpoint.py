@@ -21,6 +21,16 @@ def buildDir(dir_check, overwrite = False):
         
     return
 
+
+def saveDicoms(dicom_files, save_dir):
+    
+    for num, file in enumerate(dicom_files):
+        save_loc = os.path.join(save_dir, str(num).zfill(4) + '.dcm')
+        file.save_as(save_loc)
+    
+    return
+
+
 def histo(arr, bins = 10, threshold = False, title = False):
     #arr
     #bins
