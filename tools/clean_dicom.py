@@ -13,13 +13,7 @@ def stepSizes(dicom_files):
     return slice_steps, slice_steps_unq, slice_locs, slice_locs_unq
 
 
-def roundPositionPatient(dicom_files):
-    
-    print('ROUNDING POSITIONS')
-    for dicom_file in dicom_files:
-        dicom_file.ImagePositionPatient = [float(round(pos, 1)) for pos in dicom_file.ImagePositionPatient]
-        
-    return dicom_files
+
 
 
 def resetSlices(dicom_files, slice_steps, slice_steps_unq):

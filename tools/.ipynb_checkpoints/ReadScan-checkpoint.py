@@ -5,10 +5,10 @@ import cv2
 from matplotlib import pyplot as plt
 
 
-class ManageDicom():
+class ReadScan():
     
     def __init__(self):
-        pass
+        pass    
     
     def winLev(self, arr, wc, ww, ri, rs):
 

@@ -1,4 +1,6 @@
-from ..tools.ManageDicom import ManageDicom
+from tools.ReadScan import *
+from tools.manage_dicom import *
+
 from glob import glob
 import numpy as np
 import pydicom as dcm
@@ -8,52 +10,71 @@ from matplotlib import pyplot as plt
 
 
 
-def check_tags(files_dicom, list_tags): 
 
-    dict_tags = {}
-    dict_max = {}
+
+# split files by tag? --return multiple scans? -- different function for splitting files by series/some other tag.. 
+# add patient position rounding function
+# 
+
+
+class ReadDicom(ReadScan):
     
-    for tag in list_tags:
-        count_tags = [getattr(file, tag) for file in files_dicom]
-        unq_tags = set(count_tags); unq_tags = list(unq_tags)
+    def __init__(self, filename, filter_tags = False, window_level = False, clip_vals = False, sort_by = False, decompress = True):
         
-        tmp_counts = []
-        for unq in unq_tags:
-            dict_tags[tag + '--' + str(unq)] = count_tags.count(unq)
-            tmp_counts.append(count_tags.count(unq))
-        dict_max[tag] = unq_tags[tmp_counts.index(max(tmp_counts))]
+        # add decompress option... decompress self.scan, save self.scan with new PixelData and TransferSyntaxUID...? or other decompress() option?
+        # have clip_val edit arr 
+        # change PixelData to arr 
         
-    for key, value in dict_tags.items():
-        print(key.split('--'), ' : ', value)
-#         [tag, val] = key.split('--')
-
-    for key, value in dict_max.items():
-        print('most frequent value for ', key, ' key: ', value) 
-              
-    return dict_tags, dict_max
-
-
-class ReadDicom(ManageDicom):
-    
-    def __init__(self, filename, filter_tags = False, window_level = False):
+        
+        """
+        filename [string]: directory location of dicom files
+        filter_tags [dictionary]: tag/value pairs, 'max' as value selects most frequent unique tag
+        window_level[bool]: True conducts window/level operation based on WindowCenter/WindowWidth/RescaleSlope/RescaleIntercept tags or defaults
+        clip_vals[list]: min and max values to clip pixel array (e.g., [-250, 200])
+        sort_by[string]: dicom tag used to sort array (e.g., sort_by = 'SliceLocation')
+        sort_by[dict]: dicom tag and indexused to sort array (e.g., sort_by = {'ImagePositionPatient': 2})
+        decompress[bool]: set TransferSyntaxUID to LittleEndianExplicit, array as type int16
+        """
         
         #add something to check for inconsistencies in dicom files...slice thickness, etc., 
         list_glob = glob(os.path.join(filename, '**/*.dcm'), recursive = True); list_glob.sort(); #list_glob.reverse()
         scan = [dcm.dcmread(file) for file in list_glob]
         
+        
         #edit so if not filter it reads the full files, otherwise it stops before pixel values, then reads pixel values after filtering
         if filter_tags:
             dict_tags, dict_max = check_tags(scan, filter_tags)
-            for tag in filter_tags:
-                scan = [file for file in scan if getattr(file, tag) == dict_max[tag]]
+            self.dict_tags = dict_tags
+            self.dict_max = dict_max
+            for key, value in filter_tags.items():
+                if value == 'max':
+                    scan = [file for file in scan if getattr(file, key) == dict_max[key]]
+                else:
+                    scan = [file for file in scan if getattr(file, key) == value]
+                
+        if sort_by:
+            if type(sort_by) == str:
+                list_sort = [getattr(file, sort_by) for file in scan]
+            elif type(sort_by) == dict:
+                (tag, ind), = sort_by.items()
+                list_sort = [getattr(file, tag)[ind] for file in scan]
+            else:
+                print('ERROR: [sort_by] enter either string or dict type as arg')
+            scan = [x for _, x in sorted(zip(list_sort, scan))]
         
         arr = np.array([file.pixel_array for file in scan]); arr = np.swapaxes(arr, 0, 2); arr = np.flip(arr, 1); arr = np.flip(arr, 2)
+        
         window_center, window_width, rescale_intercept, rescale_slope = super().getWinLevAttr_dcm(scan[0])
         if window_level:
             arr = super().winLev(arr, window_center, window_width, rescale_intercept, rescale_slope)
             
+        type_arr = arr.dtype
+        if clip_vals:
+            arr = np.clip(arr, clip_vals[0], clip_vals[1]).astype(type_arr)
+
         self.root_file = filename
         self.root_type = 'DICOM'
+        self.decompress = decompress
         #self.scan_type = 'MR', 'CT', etc.
         self.scan = scan
         self.arr = arr
@@ -81,4 +102,21 @@ class ReadDicom(ManageDicom):
             fig.add_subplot(1, 3, i)
             plt.imshow(ims[i - 1],cmap = 'gray')
         plt.show()
+         
+            
+    def save_as(self, save_dir):
+        
+        arr = np.swapaxes(self.arr, 0, 2); arr = np.flip(arr, 1); arr = np.flip(arr, 0); 
+        
+        if self.decompress:
+            self.scan = decompressDicoms(self.scan)
+    
+        for num, file in enumerate(self.scan):
+#             file.PixelData = self.arr[num, ...].astype('int16').tobytes()     # update dicom files
+            file.PixelData = arr[num, ...].astype('int16').tobytes()
+            save_loc = os.path.join(save_dir, str(num).zfill(4) + '.dcm')
+            buildDir(save_dir)
+            file.save_as(save_loc)
+
+        return
         

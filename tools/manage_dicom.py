@@ -6,10 +6,70 @@ from glob import glob
 import os
 import tempfile
 import datetime
+import copy
 
 #custom imports
-from ..tools.shortcuts import *
-from ..tools.ManageDicom import ManageDicom
+from tools.shortcuts import *
+
+
+# -- retrieve dicom tag distribution in list of dicom files
+def check_tags(files_dicom, list_tags): 
+
+    dict_tags = {}
+    dict_max = {}
+    
+#     for tag in list_tags:
+#         count_tags = [getattr(file, tag) for file in files_dicom]
+#         unq_tags = set(count_tags); unq_tags = list(unq_tags)
+        
+#         tmp_counts = []
+#         for unq in unq_tags:
+#             dict_tags[tag + '--' + str(unq)] = count_tags.count(unq)
+#             tmp_counts.append(count_tags.count(unq))
+#         dict_max[tag] = unq_tags[tmp_counts.index(max(tmp_counts))]
+
+    for key, value in list_tags.items():
+        count_tags = [getattr(file, key) for file in files_dicom]
+        unq_tags = set(count_tags); unq_tags = list(unq_tags)
+        
+        tmp_counts = []
+        for unq in unq_tags:
+            dict_tags[key + '--' + str(unq)] = count_tags.count(unq)
+            tmp_counts.append(count_tags.count(unq))
+        dict_max[key] = unq_tags[tmp_counts.index(max(tmp_counts))]
+        
+    for key, value in dict_tags.items():
+        print(key.split('--'), ' : ', value)
+#         [tag, val] = key.split('--')
+
+    for key, value in dict_max.items():
+        print('most frequent value for ', key, ' key: ', value) 
+              
+    return dict_tags, dict_max
+
+
+## PREP FOR dicom2nifti
+# -- round ImagePositionPatient tag values -- prevents dicom2nifti error
+def roundPositionPatient(dicom_files):
+    
+    print('ROUNDING POSITIONS')
+    for dicom_file in dicom_files:
+        dicom_file.ImagePositionPatient = [float(round(pos, 1)) for pos in dicom_file.ImagePositionPatient]
+        
+    return dicom_files
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -88,6 +148,25 @@ def newDicom():
     os.remove(filename_little_endian)
         
     return ds
+
+def decompressDicoms(dicom_files):
+    
+    dicom_decompressed = [copy.deepcopy(file) for file in dicom_files]
+    
+    for file in dicom_decompressed:
+        
+        file.BitsAllocated = 16
+        file.BitsStored = 16
+        file.HighBit = 15
+        file.PixelRepresentation = 1 #0 for unsigned, 1 for signed
+        file.SamplesPerPixel = 1
+        file.PhotometricInterpretation = 'MONOCHROME2'
+        file.is_little_endian = True
+        file.is_implicit_VR = False
+        file.PixelData = file.pixel_array.astype('int16').tobytes()
+        file.file_meta.TransferSyntaxUID = dcm.uid.ExplicitVRLittleEndian
+    
+    return dicom_decompressed
 
 
 
