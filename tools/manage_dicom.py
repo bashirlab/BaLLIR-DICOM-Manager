@@ -1,11 +1,94 @@
 #standard imports
 import pydicom as dcm
+from pydicom.dataset import Dataset, FileDataset, FileMetaDataset
 from glob import glob
 
+import os
+import tempfile
+import datetime
 
 #custom imports
 from ..tools.shortcuts import *
 from ..tools.ManageDicom import ManageDicom
+
+
+
+def nifti2dicom(file_nib, dict_tags = False, mask_val = False): #move to different file, mask_val doesn't really work if looking for 0 val only (fucks up bool)
+    
+    arr_nib = np.copy(file_nib.get_fdata())
+    if mask_val:
+        arr_nib[arr_nib != mask_val] = 0; arr_nib[arr_nib > 0] = 1
+                
+    files_dicom = [newDicom() for i in range(arr_nib.shape[2])]
+    
+    for i in range(arr_nib.shape[2]):
+        files_dicom[i].InstanceNumber = i
+        files_dicom[i].PixelData = np.rot90(arr_nib[..., i]).astype('int16')#.tobytes()#.astype('int16')#.astype('int16').tobytes() #.astype('int16')#.astype('int16')#
+        files_dicom[i]['PixelData'].VR = 'OB'
+        files_dicom[i].Columns = arr_nib.shape[0]
+        files_dicom[i].Rows = arr_nib.shape[1]
+        files_dicom[i].PixelSpacing = [val for val in file_nib.header.get_zooms()]
+        files_dicom[i].SliceThickness = file_nib.header.get_zooms()[2]
+        if mask_val:
+            files_dicom[i].LargestImagePixelValue = 1
+            files_dicom[i]['LargestImagePixelValue'].VR = 'US' #SS
+        if dict_tags:
+            for key, value in dict_tags.items():
+                setattr(files_dicom[i], key, value)
+        
+    return files_dicom
+
+#make unique something number so it doesn't overwrite
+
+
+def newDicom():
+    
+    # Create some temporary filenames
+    suffix = '.dcm'
+    filename_little_endian = tempfile.NamedTemporaryFile(suffix=suffix).name
+
+    # Populate required values for file meta information
+    file_meta = FileMetaDataset()
+    file_meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.2'
+    file_meta.MediaStorageSOPInstanceUID = "1.2.3"
+    file_meta.ImplementationClassUID = "1.2.3.4"
+
+    # Create the FileDataset instance (initially no data elements, but file_meta
+    # supplied)
+    ds = FileDataset(filename_little_endian, {},
+                     file_meta=file_meta, preamble=b"\0" * 128)
+
+    # Add the data elements -- not trying to set all required here. Check DICOM
+    # standard
+    ds.PatientName = "Test^Firstname"
+    ds.PatientID = "123456"
+
+    # Set the transfer syntax
+    ds.file_meta.TransferSyntaxUID = dcm.uid.ExplicitVRLittleEndian
+    ds.is_little_endian = True
+    ds.is_implicit_VR = False
+    
+    # Set creation date/time
+    dt = datetime.datetime.now()
+    ds.ContentDate = dt.strftime('%Y%m%d')
+    timeStr = dt.strftime('%H%M%S.%f')  # long format with micro seconds
+    ds.ContentTime = timeStr
+    
+    ds.BitsAllocated = 16
+    ds.BitsStored = 16
+    ds.HighBit = 15
+    ds.PixelRepresentation = 1 #0 for unsigned, 1 for signed
+    ds.SamplesPerPixel = 1
+    ds.PhotometricInterpretation = 'MONOCHROME2'
+
+    ds.save_as(filename_little_endian)
+
+    # reopen the data just for checking
+    ds = dcm.dcmread(filename_little_endian)
+    os.remove(filename_little_endian)
+        
+    return ds
+
 
 
 
@@ -23,18 +106,6 @@ def saveDicoms(dicom_files, save_dir):
 
 
 
-def buildDCM():
-
-    ds = dcm.dcmread('/DataMount/tmp.dcm')
-    ds.PatientName = "Test^Firstname"
-    ds.PatientID = "123456"
-    ds.file_meta.TransferSyntaxUID = '1.2.840.10008.1.2.1' #dcm.uid.ExplicitVRBigEndian
-    ds.BitsAllocated = 16
-    ds.PixelRepresentation = 0
-    ds.SamplesPerPixel = 1
-    ds.PhotometricInterpretation = 'MONOCHROME2'
-    
-    return ds
 
         
 # FIX SLICE INCONSISTENCIES

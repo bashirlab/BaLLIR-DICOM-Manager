@@ -16,8 +16,8 @@ def buildDir(dir_check, overwrite = False):
     
     if not os.path.exists(dir_check):
         os.makedirs(dir_check, exist_ok = True)
-    else:
-        print(dir_check, 'ERROR: directory exists, set overwrite arg to True')
+#     else:
+#         print(dir_check, 'ERROR: directory exists, set overwrite arg to True')
         
     return
 
