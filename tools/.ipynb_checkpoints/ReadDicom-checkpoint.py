@@ -19,7 +19,7 @@ from matplotlib import pyplot as plt
 
 class ReadDicom(ReadScan):
     
-    def __init__(self, filename, filter_tags = False, window_level = False, clip_vals = False, sort_by = False, decompress = True):
+    def __init__(self, filename, filter_tags = False, window_level = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False):
         
         # add decompress option... decompress self.scan, save self.scan with new PixelData and TransferSyntaxUID...? or other decompress() option?
         # have clip_val edit arr 
@@ -62,7 +62,11 @@ class ReadDicom(ReadScan):
                 print('ERROR: [sort_by] enter either string or dict type as arg')
             scan = [x for _, x in sorted(zip(list_sort, scan))]
         
-        arr = np.array([file.pixel_array for file in scan]); arr = np.swapaxes(arr, 0, 2); arr = np.flip(arr, 1); arr = np.flip(arr, 2)
+        if not flip_arr:
+            arr = np.array([file.pixel_array for file in scan]); arr = np.swapaxes(arr, 0, 2); arr = np.flip(arr, 1); arr = np.flip(arr, 2)
+        else:
+            arr = np.array([file.pixel_array for file in scan]); arr = np.swapaxes(arr, 0, 2); arr = np.flip(arr, 1); #arr = np.flip(arr, 2)
+            
         
         window_center, window_width, rescale_intercept, rescale_slope = super().getWinLevAttr_dcm(scan[0])
         if window_level:
@@ -106,7 +110,10 @@ class ReadDicom(ReadScan):
             
     def save_as(self, save_dir):
         
-        arr = np.swapaxes(self.arr, 0, 2); arr = np.flip(arr, 1); arr = np.flip(arr, 0); 
+        if not flip_arr:
+            arr = np.swapaxes(self.arr, 0, 2); arr = np.flip(arr, 1); arr = np.flip(arr, 0); 
+        else:
+            print('ADD FIX')
         
         if self.decompress:
             self.scan = decompressDicoms(self.scan)

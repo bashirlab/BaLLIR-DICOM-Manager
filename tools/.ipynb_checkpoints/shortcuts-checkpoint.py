@@ -4,8 +4,50 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import shutil
+import zipfile
+import sys
 
 # custom imports
+
+def normalizeArr(arr, norm_range = [0, 1]):  #fix so works with negative
+    
+    norm = (norm_range[1]*(arr - np.amin(arr))/np.ptp(arr)) 
+    
+    return norm
+
+
+
+def removeMac(dir_mac):
+    
+    list_ds = glob(os.path.join(dir_mac, '**/*.DS_Store'), recursive = True)
+    for file in list_ds: os.remove(file) 
+        
+    list_os = glob(os.path.join(dir_mac, '**/__MACOSX'), recursive = True)
+    for file in list_os: shutil.rmtree(file) 
+    
+    return
+
+
+
+def unzipRec(dir_zip, remove_zips = False, remove_mac = True): #add remove zip files option, add removeMac option
+    
+    zips_remain = True
+    while zips_remain:
+        
+        list_glob = glob(os.path.join(dir_test, '**/*.zip'), recursive = True)
+        list_unzipped = [file for file in list_glob if not os.path.exists(file.split('.zip')[0])]
+        
+        for file_zip in list_unzipped:
+            with zipfile.ZipFile(file_zip, 'r') as zip_ref:
+                zip_ref.extractall(file_zip.split('.zip')[0])
+          
+        list_glob = glob(os.path.join(dir_test, '**/*.zip'), recursive = True)
+        list_unzipped = [file for file in list_glob if not os.path.exists(file.split('.zip')[0])]
+        if len(list_unzipped) == 0 : zips_remain = False 
+            
+    if remove_mac: removeMac(dir_zip)
+    
+    return
 
 
 
