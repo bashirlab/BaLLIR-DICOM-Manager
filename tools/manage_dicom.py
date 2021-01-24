@@ -61,18 +61,6 @@ def roundPositionPatient(dicom_files):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 def nifti2dicom(file_nib, dict_tags = False, mask_val = False): #move to different file, mask_val doesn't really work if looking for 0 val only (fucks up bool)
     
     arr_nib = np.copy(file_nib.get_fdata())

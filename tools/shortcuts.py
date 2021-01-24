@@ -7,7 +7,50 @@ import shutil
 import zipfile
 import sys
 
-# custom imports
+from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
+
+
+
+def normalizeArr(arr, norm_range = [0, 1]): 
+    
+    norm = (norm_range[1] - norm_range[0]) * ((arr - np.amin(arr))/(np.amax(arr) - np.amin(arr))) + norm_range[0]
+    
+    return norm
+
+
+
+def printRange(arr):
+    
+    print('RANGE: ', np.amin(arr), ' : ', np.amax(arr))
+    
+    return
+
+
+
+def plotRes(list_img, mag = 1, row_col = False, legend = False):
+    
+    '''
+    list_img[list] = list of images to plot
+    mag[int] = plot size
+    row_col[list] = list of [row, col] for organization of plots
+    legend[list] = nested list [[label1, color1], [label2, color2],...]
+    '''
+    
+    if not row_col : row_col = [1, len(list_img)]
+    fig = plt.figure(figsize = (15 * mag, 15 * mag))
+    
+    # add_subplot(nrows, ncols, index, **kwargs)
+    for i in range(1, (1 + len(list_img))):
+        ax = fig.add_subplot(row_col[0], row_col[1], i)
+        if legend: 
+            legend_elements = [Patch(facecolor = legend[i-1][1], edgecolor = legend[i-1][1], label = legend[i-1][0])]
+            ax.legend(handles=legend_elements, loc='upper right', prop={'size': 15 * mag})
+
+        plt.imshow((255*list_img[i - 1]).astype(np.uint8), cmap = 'gray')
+    
+    plt.show()
+    
 
 
 def normalizeArr(arr, norm_range = [0, 1]):  #fix so works with negative

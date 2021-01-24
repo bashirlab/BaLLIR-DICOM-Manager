@@ -30,6 +30,8 @@ class ReadDicomMask(ReadDicom):
         # add decompress option... decompress self.scan, save self.scan with new PixelData and TransferSyntaxUID...? or other decompress() option?
         # have clip_val edit arr 
         # change PixelData to arr 
+        
+        # change bit tags etc?
 
 
         """
@@ -41,5 +43,6 @@ class ReadDicomMask(ReadDicom):
         sort_by[dict]: dicom tag and indexused to sort array (e.g., sort_by = {'ImagePositionPatient': 2})
         decompress[bool]: set TransferSyntaxUID to LittleEndianExplicit, array as type int16
         """
+            
             
         

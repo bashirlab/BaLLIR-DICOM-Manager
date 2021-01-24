@@ -32,8 +32,8 @@ class ReadScan():
                     attr[key] = float(getattr(tmp_dcm, key))
                 except:
                     attr[key] = float(getattr(tmp_dcm, key)[0])
-            else:
-                print('MISSING: ', key)
+#             else:
+#                 print('MISSING: ', key)
 
         wc, ww, ri, rs = attr.values()
         return wc, ww, ri, rs
@@ -49,8 +49,8 @@ class ReadScan():
                     attr[key] = float(tmp_json[key]['Value'])
                 except:
                     attr[key] = float(tmp_json[key]['Value'][0])
-            else:
-                print('MISSING: ', key)
+#             else:
+#                 print('MISSING: ', key)
 
         wc, ww, ri, rs = attr.values()
         return wc, ww, ri, rs
@@ -62,7 +62,7 @@ class ReadScan():
                     attr_vars[attr_num] = float(tmp_json[attr_name]['Value'])
                 except:
                      attr_vars[attr_num] = float(tmp_json[attr_name]['Value'][0])
-            else:
-                print('MISSING: ', attr_name)
+#             else:
+#                 print('MISSING: ', attr_name)
         print(str(wc) + ' ' + str(ww) + ' ' + str(ri) + ' ' + str(rs))
         return wc, ww, ri, rs

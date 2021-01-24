@@ -1,5 +1,6 @@
 from tools.ReadScan import *
 from tools.manage_dicom import *
+from tools.shortcuts import *
 
 from glob import glob
 import numpy as np
@@ -89,6 +90,7 @@ class ReadDicom(ReadScan):
         self.window_center = window_center
         self.rescale_slope = rescale_slope
         self.rescale_intercept = rescale_intercept
+        self.flip = flip_arr
         
 
         
@@ -96,21 +98,20 @@ class ReadDicom(ReadScan):
         
         transverse = self.arr[..., int(self.arr.shape[2]/2)]
         transverse = cv2.resize(transverse, dsize = (int(self.range[1]), int(self.range[0])), interpolation = cv2.INTER_CUBIC); transverse = np.rot90(transverse)
-        saggital = self.arr[int(self.arr.shape[0]/2), ...]
-        saggital = cv2.resize(saggital, dsize = (int(self.range[2]), int(self.range[0])), interpolation = cv2.INTER_CUBIC); saggital = np.rot90(saggital)
+        sagittal = self.arr[int(self.arr.shape[0]/2), ...]
+        sagittal = cv2.resize(sagittal, dsize = (int(self.range[2]), int(self.range[0])), interpolation = cv2.INTER_CUBIC); sagittal = np.rot90(sagittal); sagittal = np.flip(sagittal, 0)
         coronal = self.arr[:, int(self.arr.shape[1]/2), :] 
-        coronal = cv2.resize(coronal, dsize = (int(self.range[2]), int(self.range[1])), interpolation = cv2.INTER_CUBIC); coronal = np.rot90(coronal)
-        ims = [transverse, saggital, coronal]
-        fig=plt.figure(figsize=(15, 15))
-        for i in range(1, 4):
-            fig.add_subplot(1, 3, i)
-            plt.imshow(ims[i - 1],cmap = 'gray')
-        plt.show()
-         
-            
+        coronal = cv2.resize(coronal, dsize = (int(self.range[2]), int(self.range[1])), interpolation = cv2.INTER_CUBIC); coronal = np.rot90(coronal); coronal = np.flip(coronal, 0)
+        ims = [transverse, sagittal, coronal]
+        
+        plotRes([transverse, coronal, sagittal], mag = 1.0)
+        
+             
     def save_as(self, save_dir):
         
-        if not flip_arr:
+        buildDir(save_dir)
+        
+        if not self.flip:
             arr = np.swapaxes(self.arr, 0, 2); arr = np.flip(arr, 1); arr = np.flip(arr, 0); 
         else:
             print('ADD FIX')
