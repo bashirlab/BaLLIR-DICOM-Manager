@@ -20,7 +20,7 @@ from matplotlib import pyplot as plt
 
 class ReadDicom(ReadScan):
     
-    def __init__(self, filename, filter_tags = False, window_level = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False):
+    def __init__(self, filename, filter_tags = False, window_level = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False, fix_dicoms = False):
         
         # add decompress option... decompress self.scan, save self.scan with new PixelData and TransferSyntaxUID...? or other decompress() option?
         # have clip_val edit arr 
@@ -40,6 +40,10 @@ class ReadDicom(ReadScan):
         #add something to check for inconsistencies in dicom files...slice thickness, etc., 
         list_glob = glob(os.path.join(filename, '**/*.dcm'), recursive = True); list_glob.sort(); #list_glob.reverse()
         scan = [dcm.dcmread(file) for file in list_glob]
+        if fix_dicoms: 
+            scan = fixDicoms(scan)
+        if clip_vals:
+            scan = clipVals(scan, clip_vals)
         
         
         #edit so if not filter it reads the full files, otherwise it stops before pixel values, then reads pixel values after filtering
@@ -74,8 +78,10 @@ class ReadDicom(ReadScan):
             arr = super().winLev(arr, window_center, window_width, rescale_intercept, rescale_slope)
             
         type_arr = arr.dtype
-        if clip_vals:
-            arr = np.clip(arr, clip_vals[0], clip_vals[1]).astype(type_arr)
+        
+#         if clip_vals:
+            
+#             arr = np.clip(arr, clip_vals[0], clip_vals[1]).astype(type_arr)
 
         self.root_file = filename
         self.root_type = 'DICOM'
@@ -98,10 +104,13 @@ class ReadDicom(ReadScan):
         
         transverse = self.arr[..., int(self.arr.shape[2]/2)]
         transverse = cv2.resize(transverse, dsize = (int(self.range[1]), int(self.range[0])), interpolation = cv2.INTER_CUBIC); transverse = np.rot90(transverse)
+        transverse = normalizeArr(transverse, [0, 1])
         sagittal = self.arr[int(self.arr.shape[0]/2), ...]
         sagittal = cv2.resize(sagittal, dsize = (int(self.range[2]), int(self.range[0])), interpolation = cv2.INTER_CUBIC); sagittal = np.rot90(sagittal); sagittal = np.flip(sagittal, 0)
+        sagittal = normalizeArr(sagittal, [0, 1])
         coronal = self.arr[:, int(self.arr.shape[1]/2), :] 
         coronal = cv2.resize(coronal, dsize = (int(self.range[2]), int(self.range[1])), interpolation = cv2.INTER_CUBIC); coronal = np.rot90(coronal); coronal = np.flip(coronal, 0)
+        coronal = normalizeArr(coronal, [0, 1])
         ims = [transverse, sagittal, coronal]
         
         plotRes([transverse, coronal, sagittal], mag = 1.0)

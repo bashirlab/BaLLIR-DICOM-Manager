@@ -8,14 +8,10 @@ import matplotlib
 
 
 # start using *args and **kwargs
-
 # start as GT, expand to include QC image stuff with TP and FP measurements 
-
 # log errors, instances of slice_removal, etc.
 
 #orthoview and save_as redundant
-
-
 
 
 
@@ -30,7 +26,6 @@ def saveRGB(rgb, dir_save):
         imageio.imwrite(loc_save, rgb[i,...])
     
     return
-
 
 
 class ReadPair:
@@ -154,7 +149,6 @@ class ReadPair:
                 loc_slice = os.path.join(loc_save, str(slice_num).zfill(4) + ext)
                 plt.savefig(loc_slice)
                 plt.close()
-                
 
         return
     

@@ -22,11 +22,11 @@ def removeEmpty(arr, ind_empty):
 class ReadDicomMask(ReadDicom):
     
         
-    def __init__(self, filename, filter_tags = False, window_level = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False, remove_empty = False):
+    def __init__(self, filename, filter_tags = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False, remove_empty = False, fix_dicoms = False):
         
-        super().__init__(filename, filter_tags = False, window_level = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False)
+        super().__init__(filename, filter_tags = filter_tags, clip_vals = False, sort_by = False, decompress = True, flip_arr = False, fix_dicoms = fix_dicoms)
         if remove_empty: self.arr = removeEmpty(self.arr, indexEmpty(self.arr))
-            
+        
         # add decompress option... decompress self.scan, save self.scan with new PixelData and TransferSyntaxUID...? or other decompress() option?
         # have clip_val edit arr 
         # change PixelData to arr 
