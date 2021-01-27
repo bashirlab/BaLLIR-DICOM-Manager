@@ -123,6 +123,7 @@ class ReadDicom(ReadScan):
         if not self.flip:
             arr = np.swapaxes(self.arr, 0, 2); arr = np.flip(arr, 1); arr = np.flip(arr, 0); 
         else:
+            arr = np.swapaxes(self.arr, 0, 2); arr = np.flip(arr, 1); arr = np.flip(arr, 0); 
             print('ADD FIX')
         
         if self.decompress:

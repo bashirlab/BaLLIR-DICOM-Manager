@@ -148,7 +148,7 @@ def nifti2dicom(file_nib, dict_tags = False, mask_val = False): #move to differe
 #make unique something number so it doesn't overwrite
 
 
-def newDicom():
+def newDicom(arr = False):
     
     # Create some temporary filenames
     suffix = '.dcm'
@@ -187,6 +187,7 @@ def newDicom():
     ds.PixelRepresentation = 1 #0 for unsigned, 1 for signed
     ds.SamplesPerPixel = 1
     ds.PhotometricInterpretation = 'MONOCHROME2'
+    if arr: ds.PixelData = arr.astype('int16').tobytes()
 
     ds.save_as(filename_little_endian)
 
@@ -195,6 +196,21 @@ def newDicom():
     os.remove(filename_little_endian)
         
     return ds
+
+
+def resetDicom(file_dicom):
+    
+    # Create some temporary filenames
+    suffix = '.dcm'
+    filename_little_endian = tempfile.NamedTemporaryFile(suffix=suffix).name
+    
+    file_dicom.save_as(filename_little_endian)
+    file_dicom = dcm.dcmread(filename_little_endian)
+    os.remove(filename_little_endian)
+    
+    return file_dicom
+
+
 
 def decompressDicoms(dicom_files):
     
@@ -242,7 +258,7 @@ def stepSizes(dicom_files):
     for dicom_file in dicom_files:
         slice_locs.append(round(dicom_file.ImagePositionPatient[2], 3))
 
-    slice_steps = [round(slice_locs[num] - slice_locs[num+1],3) for num in range(len(slice_locs) -1)]
+    slice_steps = [round(slice_locs[num+1] - slice_locs[num],3) for num in range(len(slice_locs) -1)]
     slice_steps_unq = unq(slice_steps)
     
     slice_locs_unq = unq(slice_locs)
@@ -332,23 +348,7 @@ def fixDicoms(dicom_files):
     return dicom_files
 
 
-def getROIcoords(roi):
 
-    # get index of ROI
-    ind = int(roi['integer'][1])
-    # get coordinate data of ROI
-    x = roi['array']['dict']['array'][1]['string']
-    # convert string coordinates to tuples
-    coords = [literal_eval(coord) for coord in x]
-    # parse out x and y and make closed loop
-    x = [i[0] for i in coords] + [coords[0][0]]
-    y = [i[1] for i in coords] + [coords[0][1]]
-    # apply parametric spline interpolation
-    tck, _ = interpolate.splprep([x,y], s=0, per=True)
-    x, y = interpolate.splev(np.linspace(0,1,500), tck)
-    
-    
-    return ind, x, y
 
 
 

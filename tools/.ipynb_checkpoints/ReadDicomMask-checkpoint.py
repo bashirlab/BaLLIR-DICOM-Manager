@@ -24,7 +24,7 @@ class ReadDicomMask(ReadDicom):
         
     def __init__(self, filename, filter_tags = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False, remove_empty = False, fix_dicoms = False):
         
-        super().__init__(filename, filter_tags = filter_tags, clip_vals = False, sort_by = False, decompress = True, flip_arr = False, fix_dicoms = fix_dicoms)
+        super().__init__(filename, filter_tags = filter_tags, clip_vals = False, sort_by = sort_by, decompress = decompress, flip_arr = flip_arr, fix_dicoms = fix_dicoms)
         if remove_empty: self.arr = removeEmpty(self.arr, indexEmpty(self.arr))
         
         # add decompress option... decompress self.scan, save self.scan with new PixelData and TransferSyntaxUID...? or other decompress() option?

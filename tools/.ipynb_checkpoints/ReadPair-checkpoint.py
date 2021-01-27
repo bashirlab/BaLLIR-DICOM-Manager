@@ -43,8 +43,10 @@ class ReadPair:
                 self.mask.scan = [file for num_file, file in enumerate(self.mask.scan) if num_file not in indEmpty]
                 self.scan.arr = removeEmpty(self.scan.arr, indEmpty)
                 self.scan.scan = [file for num_file, file in enumerate(self.scan.scan) if num_file not in indEmpty]
+               
                 # fix ERROR: -- ConversionValidationError: SLICE_INCREMENT_INCONSISTENT
                 slice_steps, slice_steps_unq, slice_locs, slice_locs_unq = stepSizes(self.scan.scan)
+                print('slice steps 2: ', slice_steps_unq)
                 self.scan.scan = resetSlices(self.scan.scan, slice_steps, slice_steps_unq)
                 self.mask.scan = resetSlices(self.mask.scan, slice_steps, slice_steps_unq)
 

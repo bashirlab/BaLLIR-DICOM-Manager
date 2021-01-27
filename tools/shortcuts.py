@@ -6,9 +6,19 @@ import matplotlib.pyplot as plt
 import shutil
 import zipfile
 import sys
+from glob import glob
+from tqdm import tqdm
 
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
+
+
+def unzipCheck(dir_unzip):
+    
+    list_zip = glob(os.path.join(dir_unzip, '**/*.zip'), recursive = True)
+    list_unzip = [file for file in list_zip if not os.path.isdir(os.path.split(file)[0])]
+    
+    return list_zip, list_unzip
 
 
 
@@ -73,21 +83,60 @@ def removeMac(dir_mac):
 
 
 
-def unzipRec(dir_zip, remove_zips = False, remove_mac = True): #add remove zip files option, add removeMac option
+# clean up a little so it does recursive stuff smarter -- descend into dir after unzipping
+def unzipRec(file_zip, remove_zips = False, remove_mac = True): #add remove zip files option, add removeMac option
     
+    if file_zip[-4:] == '.zip':
+        with zipfile.ZipFile(file_zip, 'r') as zip_ref:
+            zipto = file_zip.split('.zip')[0]
+            while ' .' in zipto:
+                zipto = '.'.join(zipto.split(' .')) 
+            try:
+                zip_ref.extractall(zipto)
+            except:
+                print('ERROR: unzip fail -- ', file_zip)
+            for tail in os.listdir(zipto):
+                dst = os.path.join(zipto, tail)
+                while dst[-1] == ' ':
+                    dst = dst[:-1]
+                if not dst == os.path.join(zipto, tail):
+                    print('ERROR: empty space on dir name -- ', zipto)
+                    shutil.move(os.path.join(zipto, tail), src)
+                    
+        dir_zip = zipto
+    elif os.path.isdir(file_zip):
+        dir_zip = file_zip
+    else:
+        print('file_zip arg needs to be either .zip or a directory')
+    
+    list_error = []
     zips_remain = True
     while zips_remain:
         
-        list_glob = glob(os.path.join(dir_test, '**/*.zip'), recursive = True)
-        list_unzipped = [file for file in list_glob if not os.path.exists(file.split('.zip')[0])]
+        list_glob = glob(os.path.join(dir_zip, '**/*.zip'), recursive = True)
+        list_unzipped = [file for file in list_glob if not os.path.exists(file.split('.zip')[0]) and not os.path.exists(''.join(file.split('.zip')[0].split(' ')))]
         
         for file_zip in list_unzipped:
             with zipfile.ZipFile(file_zip, 'r') as zip_ref:
-                zip_ref.extractall(file_zip.split('.zip')[0])
-          
-        list_glob = glob(os.path.join(dir_test, '**/*.zip'), recursive = True)
-        list_unzipped = [file for file in list_glob if not os.path.exists(file.split('.zip')[0])]
-        if len(list_unzipped) == 0 : zips_remain = False 
+                zipto = file_zip.split('.zip')[0]
+                while ' .' in zipto:
+                    zipto = '.'.join(zipto.split(' .')) 
+                try:
+                    zip_ref.extractall(zipto)
+                except:
+                    print('ERROR: unzip fail -- ', file_zip)
+                    list_error.append(file_zip)
+                    continue
+                for tail in os.listdir(zipto):
+                    dst = os.path.join(zipto, tail)
+                    while dst[-1] == ' ':
+                        dst = dst[:-1]
+                    if not dst == os.path.join(zipto, tail):
+                        print('ERROR: empty space on dir name -- ', zipto)
+                        shutil.move(os.path.join(zipto, tail), src)
+        list_glob = glob(os.path.join(dir_zip, '**/*.zip'), recursive = True)
+        list_unzipped = [file for file in list_glob if not os.path.exists(file.split('.zip')[0]) and not os.path.exists(''.join(file.split('.zip')[0].split(' ')))]
+        if len(list_unzipped) == 0 + len(list_error) : zips_remain = False 
             
     if remove_mac: removeMac(dir_zip)
     
