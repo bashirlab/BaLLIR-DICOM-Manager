@@ -73,9 +73,13 @@ def normalizeArr(arr, norm_range = [0, 1]):  #fix so works with negative
 
 def removeMac(dir_mac):
     
+    list_ds = glob(os.path.join(dir_dicom_upload, '.DS_Store'), recursive = False)
+    for file in list_ds: os.remove(file) 
     list_ds = glob(os.path.join(dir_mac, '**/*.DS_Store'), recursive = True)
     for file in list_ds: os.remove(file) 
-        
+       
+    list_os = glob(os.path.join(dir_mac, '__MACOSX'), recursive = False)
+    for file in list_os: shutil.rmtree(file) 
     list_os = glob(os.path.join(dir_mac, '**/__MACOSX'), recursive = True)
     for file in list_os: shutil.rmtree(file) 
     
