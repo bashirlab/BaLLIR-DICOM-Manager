@@ -30,8 +30,13 @@ def saveRGB(rgb, dir_save):
 
 class ReadPair:
      
-    def __init__(self, scan, mask, remove_empties = False, colors = ['#2c2cc9', '#06b70c', '#eaf915'], transparency = 0.3, rotate = True):
+    def __init__(self, scan, mask, remove_empties = False, colors = ['#2c2cc9', '#06b70c', '#eaf915'], transparency = 0.3, rotate = True, sync_attributes = False, round_attributes = False, sync_slices = False):
+        """
         
+        sync_attributes[list]: list of attributes to copy from scan to mask 
+        round_attributes[dict]: round attributes (keys) to decimal place (values)
+        sync_slices[dict]: attribute and attribute's indices to set equal to first slice e.g. -- {'ImagePositionPatient': [0,1]}
+        """
         self.scan = copy.deepcopy(scan)
         self.mask = copy.deepcopy(mask)
         
@@ -49,7 +54,34 @@ class ReadPair:
                 print('slice steps 2: ', slice_steps_unq)
                 self.scan.scan = resetSlices(self.scan.scan, slice_steps, slice_steps_unq)
                 self.mask.scan = resetSlices(self.mask.scan, slice_steps, slice_steps_unq)
-
+                
+        if sync_attributes:
+            for attr in sync_attributes:
+                for num, file in enumerate(self.scan.scan):
+                    setattr(self.mask.scan[num], attr, getattr(self.scan.scan[num], attr))
+        if round_attributes:
+            for key_attr, value_round in round_attributes.items():
+                for num, file in enumerate(self.scan.scan):
+                    attr_rounded_scan = [round(cur_attr, value_round) for cur_attr in getattr(self.scan.scan[num], key_attr)]
+                    setattr(self.scan.scan[num], key_attr, attr_rounded_scan)
+                    attr_rounded_mask = [round(cur_attr, value_round) for cur_attr in getattr(self.mask.scan[num], key_attr)]
+                    setattr(self.mask.scan[num], key_attr, attr_rounded_mask)
+        if sync_slices:
+            for key_attr, value_ind in sync_slices.items():
+                const_attr = getattr(self.scan.scan[0], key_attr)
+                for num, file in enumerate(self.scan.scan):
+                    tmp_attr = getattr(file, key_attr)
+                    for ind in value_ind:                        
+                        tmp_attr[ind] = const_attr[ind]
+                    setattr(self.scan.scan[num], key_attr, tmp_attr)
+                const_attr = getattr(self.mask.scan[0], key_attr)
+                for num, file in enumerate(self.mask.scan):
+                    tmp_attr = getattr(file, key_attr)
+                    for ind in value_ind:                        
+                        tmp_attr[ind] = const_attr[ind]
+                    setattr(self.mask.scan[num], key_attr, tmp_attr)
+                    
+        
             
         rgb_colors = [tuple(int(color.strip('#')[i:i+2], 16) for i in (0, 2, 4)) for color in colors]
         rgb = np.copy(self.scan.arr)

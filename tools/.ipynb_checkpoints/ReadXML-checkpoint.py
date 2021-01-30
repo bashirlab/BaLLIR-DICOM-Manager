@@ -74,6 +74,9 @@ def xml2dicom(file_xml, template = False, z_reversed = False):
 
     if template: 
         files_dicom = [decompressDicom(deepcopy(file)) for file in template]
+        for file_dicom in files_dicom:
+            file_dicom.RescaleSlope = 1.0
+            file_dicom.RescaleIntercept = 0.0
     else:
         files_dicom = [newDicom(arr_mask[..., i]) for i in range(arr_mask.shape[2])]
         for num, file in enumerate(files_dicom):
