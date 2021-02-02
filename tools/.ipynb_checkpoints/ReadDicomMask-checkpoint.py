@@ -1,7 +1,7 @@
 from tools.ReadDicom import *
 
 
-def indexEmpty(arr):
+def index_empty(arr):
 
     for num_slice in range(arr.shape[2]):
         ind_mask = [ind for ind in range(arr.shape[2]) if np.amax(arr[..., ind]) > 0]
@@ -10,7 +10,7 @@ def indexEmpty(arr):
     return ind_empty
 
 
-def removeEmpty(arr, ind_empty):
+def remove_empty(arr, ind_empty):
     
     for num_slice in range(arr.shape[2]-1, 0, -1):
         if num_slice in ind_empty: arr = np.delete(arr, num_slice, 2)
@@ -25,7 +25,7 @@ class ReadDicomMask(ReadDicom):
     def __init__(self, filename, filter_tags = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False, remove_empty = False, fix_dicoms = False):
         
         super().__init__(filename, filter_tags = filter_tags, clip_vals = False, sort_by = sort_by, decompress = decompress, flip_arr = flip_arr, fix_dicoms = fix_dicoms)
-        if remove_empty: self.arr = removeEmpty(self.arr, indexEmpty(self.arr))
+        if remove_empty: self.arr = remove_empty(self.arr, index_empty(self.arr))
         
         # add decompress option... decompress self.scan, save self.scan with new PixelData and TransferSyntaxUID...? or other decompress() option?
         # have clip_val edit arr 

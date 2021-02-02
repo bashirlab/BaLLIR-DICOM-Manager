@@ -14,7 +14,7 @@ from tools.shortcuts import *
 
 
 
-def decompressDicom(file_dicom):
+def decompress_dicom(file_dicom):
     
     file_dicom.file_meta.TransferSyntaxUID = dcm.uid.ExplicitVRLittleEndian
     file_dicom.is_little_endian = True
@@ -30,44 +30,27 @@ def decompressDicom(file_dicom):
 
 
 
-def hounsfield(arr, slope, intercept, reverse = False):
+def hounsfield(arr, rescale_slope, rescale_intercept, reverse = False):
+    
+    print('doing HU')
     
     if reverse:
-        hu = arr * slope + intercept
+        arr = (arr - rescale_intercept)/rescale_slope
     else:
-        hu = (arr - intercept)/slope
-    
-    return hu
+        arr = (arr * rescale_slope) + rescale_intercept
+        
+    return arr
 
 
-def clipVals(files_dicom, clip_vals):
+def clip_arr_vals(arr, clip_vals, hounsfield_units = False, rescale_slope = False, rescale_intercept = False):
     
-    suffix = '.dcm'
-    filename_little_endian = tempfile.NamedTemporaryFile(suffix=suffix).name
+    if hounsfield_units: 
+        arr = hounsfield(arr, rescale_slope, rescale_intercept, reverse = False)
+    arr = np.clip(arr, clip_vals[0], clip_vals[1])
+    if hounsfield_units: 
+        arr = hounsfield(arr, rescale_slope, rescale_intercept, reverse = True).astype('int16')
     
-    if hasattr(files_dicom[0], 'RescaleSlope'):
-        slope = int(files_dicom[0].RescaleSlope) 
-    else:
-        slope = 1
-    if hasattr(files_dicom[0], 'RescaleIntercept'):
-        intercept = int(files_dicom[0].RescaleIntercept) 
-    else:
-        intercept = 0
-        
-    for file in files_dicom:
-        file = decompressDicom(file)
-        arr = hounsfield(file.pixel_array, slope, intercept)
-#         printRange(arr)
-        arr = np.clip(arr, clip_vals[0], clip_vals[1])
-        arr = hounsfield(arr, slope, intercept, reverse = True)
-#         printRange(arr)
-        file.PixelData = arr.astype('int16').tobytes()
-        file.save_as(filename_little_endian)
-        # reopen the data just for checking
-        file = dcm.dcmread(filename_little_endian)
-        os.remove(filename_little_endian)
-        
-    return files_dicom
+    return arr
 
 
 
@@ -109,7 +92,7 @@ def check_tags(files_dicom, list_tags):
 
 ## PREP FOR dicom2nifti
 # -- round ImagePositionPatient tag values -- prevents dicom2nifti error
-def roundPositionPatient(dicom_files):
+def round_position_patient(dicom_files):
     
 #     print('ROUNDING POSITIONS')
     for dicom_file in dicom_files:
@@ -148,7 +131,7 @@ def nifti2dicom(file_nib, dict_tags = False, mask_val = False): #move to differe
 #make unique something number so it doesn't overwrite
 
 
-def newDicom(arr = False):
+def new_dicom(arr = False):
     
     # Create some temporary filenames
     suffix = '.dcm'
@@ -198,7 +181,7 @@ def newDicom(arr = False):
     return ds
 
 
-def resetDicom(file_dicom):
+def reset_dicom(file_dicom):
     
     # Create some temporary filenames
     suffix = '.dcm'
@@ -212,7 +195,7 @@ def resetDicom(file_dicom):
 
 
 
-def decompressDicoms(dicom_files):
+def decompress_dicoms(dicom_files):
     
     dicom_decompressed = [copy.deepcopy(file) for file in dicom_files]
     
@@ -237,11 +220,11 @@ def decompressDicoms(dicom_files):
 ## CLEAN DICOM
 
 
-def saveDicoms(dicom_files, save_dir):
+def save_dicoms(dicom_files, save_dir):
     
     for num, file in enumerate(dicom_files):
         save_loc = os.path.join(save_dir, str(num).zfill(4) + '.dcm')
-        buildDir(save_dir)
+        build_dir(save_dir)
         file.save_as(save_loc)
     
     return
@@ -252,7 +235,7 @@ def saveDicoms(dicom_files, save_dir):
         
 # FIX SLICE INCONSISTENCIES
 
-def stepSizes(dicom_files):
+def step_sizes(dicom_files):
     
     slice_locs = []
     for dicom_file in dicom_files:
@@ -269,7 +252,7 @@ def stepSizes(dicom_files):
 
 
 
-def resetSlices(dicom_files, slice_steps, slice_steps_unq):
+def reset_slices(dicom_files, slice_steps, slice_steps_unq):
     
     print('ERROR RESETTING SLICE POSITIONS')
     step_counts = []
@@ -285,7 +268,7 @@ def resetSlices(dicom_files, slice_steps, slice_steps_unq):
 
 
 
-def removeDuplicates(dicom_files, slice_steps, slice_locs):
+def remove_duplicates(dicom_files, slice_steps, slice_locs):
     
     print('ERROR: DUPLICATE SLICE LOCATIONS')
     slice_breaks = [0]
@@ -306,7 +289,7 @@ def removeDuplicates(dicom_files, slice_steps, slice_locs):
     return dicom_files
 
 
-def sortDicoms(dicom_files, reverse = True, sortby = ['ImagePositionPatient', 2]):
+def sort_dicoms(dicom_files, reverse = True, sortby = ['ImagePositionPatient', 2]):
     
     #add alternate sorting methods
     
@@ -324,26 +307,26 @@ def sortDicoms(dicom_files, reverse = True, sortby = ['ImagePositionPatient', 2]
     return dicom_files
 
 
-def fixDicoms(dicom_files):
+def fix_dicoms(dicom_files):
         
     # round patient positions
-    dicom_files = roundPositionPatient(dicom_files)
+    dicom_files = round_position_patient(dicom_files)
      
     # remove duplicate slice locations
-    slice_steps, slice_steps_unq, slice_locs, slice_locs_unq = stepSizes(dicom_files) 
+    slice_steps, slice_steps_unq, slice_locs, slice_locs_unq = step_sizes(dicom_files) 
     if len(slice_locs) > len(slice_locs_unq):
         print('DUPLICATES')
-        dicom_files = removeDuplicates(dicom_files, slice_steps, slice_locs)
+        dicom_files = remove_duplicates(dicom_files, slice_steps, slice_locs)
         
     # sort files -- 
 #     slice_steps, slice_steps_unq, slice_locs, slice_locs_unq = stepSizes(dicom_files)
     #dicom_files = sortDicoms(dicom_files)
         
     # final fix --rewrte slice position with most common thickness
-    slice_steps, slice_steps_unq, slice_locs, slice_locs_unq = stepSizes(dicom_files)
+    slice_steps, slice_steps_unq, slice_locs, slice_locs_unq = step_sizes(dicom_files)
     if len(slice_steps_unq) > 1:
         print('inconsistent slice steps')
-        resetSlices(dicom_files, slice_steps, slice_steps_unq)
+        reset_slices(dicom_files, slice_steps, slice_steps_unq)
         
     return dicom_files
 
@@ -351,11 +334,9 @@ def fixDicoms(dicom_files):
 
 
 
-
-
-def saveDicoms(dicom_files, save_dir, overwrite = False):
+def save_dicoms(dicom_files, save_dir, overwrite = False):
     
-    buildDir(save_dir, overwrite = overwrite)
+    build_dir(save_dir, overwrite = overwrite)
     
     for num, file in enumerate(dicom_files):
         save_loc = os.path.join(save_dir, str(num).zfill(4) + '.dcm')
@@ -364,17 +345,17 @@ def saveDicoms(dicom_files, save_dir, overwrite = False):
     return
 
 
-def findScanFlip(dicom_files):
+def find_scan_flip(dicom_files):
     
     if dicom_files[1].ImagePositionPatient[2] > dicom_files[0].ImagePositionPatient[2]:
-        flipCheck = True
+        flip_check = True
     else:
-        flipCheck = False
+        flip_check = False
     
-    return flipCheck
+    return flip_check
 
 
-def filterDicoms(dicom_files, attr = ['SeriesNumber', 2]):
+def filter_dicoms(dicom_files, attr = ['SeriesNumber', 2]):
     
     #attr = [attribute name, filter value]
     
@@ -383,7 +364,7 @@ def filterDicoms(dicom_files, attr = ['SeriesNumber', 2]):
     return dicom_filtered
 
 
-def prepDicoms(dicom_files):
+def prep_dicoms(dicom_files):
     
     for num, file in enumerate(dicom_files):
         file.InstanceNumber = num
@@ -397,7 +378,7 @@ def prepDicoms(dicom_files):
     return dicom_files
 
 
-def findMissingSlices(dir_mask):
+def find_missing_slices(dir_mask):
     
     list_glob_masks = glob(os.path.join(dir_mask, '**/*.dcm'), recursive = True); list_glob_masks.sort()
     mask_array = np.array([dcm.dcmread(file).pixel_array for file in list_glob_masks])

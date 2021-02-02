@@ -21,7 +21,7 @@ class ReadPairNifti(ReadPair):
             
         rgb_colors = [tuple(int(color.strip('#')[i:i+2], 16) for i in (0, 2, 4)) for color in colors]
         rgb = np.copy(self.scan.arr)
-        rgb = normalizeArr(rgb.astype('float64'), norm_range = [0, 255])
+        rgb = normalize_arr(rgb.astype('float64'), norm_range = [0, 255])
         rgb = np.array([np.copy(rgb) for i in range(3)]) #build RGB
         rgb_orig = np.copy(rgb)
         for i in range(3): rgb[i,...][self.mask.arr > 0] *= (1-transparency)

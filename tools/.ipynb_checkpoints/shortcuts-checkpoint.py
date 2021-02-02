@@ -13,7 +13,7 @@ from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
 
 
-def unzipCheck(dir_unzip):
+def unzip_check(dir_unzip):
     
     list_zip = glob(os.path.join(dir_unzip, '**/*.zip'), recursive = True)
     list_unzip = [file for file in list_zip if not os.path.isdir(os.path.split(file)[0])]
@@ -22,15 +22,21 @@ def unzipCheck(dir_unzip):
 
 
 
-def normalizeArr(arr, norm_range = [0, 1]): 
+def normalize_arr(arr, norm_range = [0, 1]): 
     
     norm = (norm_range[1] - norm_range[0]) * ((arr - np.amin(arr))/(np.amax(arr) - np.amin(arr))) + norm_range[0]
     
     return norm
 
+# def normalize_arr(arr, norm_range = [0, 1]):  #fix so works with negative
+    
+#     norm = (norm_range[1]*(arr - np.amin(arr))/np.ptp(arr)) 
+    
+#     return norm
 
 
-def printRange(arr):
+
+def print_range(arr):
     
     print('RANGE: ', np.amin(arr), ' : ', np.amax(arr))
     
@@ -38,7 +44,7 @@ def printRange(arr):
 
 
 
-def plotRes(list_img, mag = 1, row_col = False, legend = False):
+def plot_res(list_img, mag = 1, row_col = False, legend = False):
     
     '''
     list_img[list] = list of images to plot
@@ -63,19 +69,15 @@ def plotRes(list_img, mag = 1, row_col = False, legend = False):
     
 
 
-def normalizeArr(arr, norm_range = [0, 1]):  #fix so works with negative
-    
-    norm = (norm_range[1]*(arr - np.amin(arr))/np.ptp(arr)) 
-    
-    return norm
 
 
 
-def removeMac(dir_mac):
+
+def remove_mac(dir_mac):
     
-    list_ds = glob(os.path.join(dir_dicom_upload, '.DS_Store'), recursive = False)
+    list_ds = glob(os.path.join(dir_mac, '.DS_Store'), recursive = False)
     for file in list_ds: os.remove(file) 
-    list_ds = glob(os.path.join(dir_mac, '**/*.DS_Store'), recursive = True)
+    list_ds = glob(os.path.join(dir_mac, '**/.DS_Store'), recursive = True)
     for file in list_ds: os.remove(file) 
        
     list_os = glob(os.path.join(dir_mac, '__MACOSX'), recursive = False)
@@ -88,7 +90,7 @@ def removeMac(dir_mac):
 
 
 # clean up a little so it does recursive stuff smarter -- descend into dir after unzipping
-def unzipRec(file_zip, remove_zips = False, remove_mac = True): #add remove zip files option, add removeMac option
+def unzip_rec(file_zip, remove_zips = False, remove_mac = True): #add remove zip files option, add removeMac option
     
     if file_zip[-4:] == '.zip':
         with zipfile.ZipFile(file_zip, 'r') as zip_ref:
@@ -148,7 +150,7 @@ def unzipRec(file_zip, remove_zips = False, remove_mac = True): #add remove zip 
 
 
 
-def buildDir(dir_check, overwrite = False):
+def build_dir(dir_check, overwrite = False):
     
     if overwrite and os.path.exists(dir_check):
         shutil.rmtree(dir_check)
@@ -195,7 +197,7 @@ def head(list_inp, len_head = 5):
     
     return
 
-def addLib():
+def add_lib():
     
     
     

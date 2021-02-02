@@ -13,7 +13,7 @@ from scipy import interpolate
 # -- CONVERT XML to NUMPY
 
 
-def getROIcoords(roi):
+def get_roi_coords(roi):
 
     # get index of ROI
     ind = int(roi['integer'][1])
@@ -47,7 +47,7 @@ def xml2numpy(file_xml, loc_save = False, file_save = False, z_reversed = False)
     file_npy = np.zeros((int(roi_list[0]['integer'][0]), int(roi_list[0]['integer'][3]), int(roi_list[0]['integer'][2])))
     
     for roi in roi_list:
-        ind, x, y = getROIcoords(roi)
+        ind, x, y = get_roi_coords(roi)
         rr, cc = polygon(y, x)
         
         if z_reversed:
@@ -73,12 +73,12 @@ def xml2dicom(file_xml, template = False, z_reversed = False):
     arr_mask = xml2numpy(file_xml)
 
     if template: 
-        files_dicom = [decompressDicom(deepcopy(file)) for file in template]
+        files_dicom = [decompress_dicom(deepcopy(file)) for file in template]
         for file_dicom in files_dicom:
             file_dicom.RescaleSlope = 1.0
             file_dicom.RescaleIntercept = 0.0
     else:
-        files_dicom = [newDicom(arr_mask[..., i]) for i in range(arr_mask.shape[2])]
+        files_dicom = [new_dicom(arr_mask[..., i]) for i in range(arr_mask.shape[2])]
         for num, file in enumerate(files_dicom):
             file.ImagePositionPatient = [0, 0, num]
             file.SliceLocation = num
@@ -86,7 +86,7 @@ def xml2dicom(file_xml, template = False, z_reversed = False):
     
     for num, file in enumerate(files_dicom):
         file.PixelData = arr_mask[..., num].astype('int16').tobytes()
-        file = resetDicom(file)
+        file = reset_dicom(file)
         file.Rows = arr_mask.shape[1]
         file.Columns = arr_mask.shape[1]
     
@@ -102,7 +102,7 @@ class ReadXML(ReadDicom):
         #add something to check for inconsistencies in dicom files...slice thickness, etc., 
         scan = xml2dicom(file_xml, template = template)
         if fix_dicoms: 
-            scan = fixDicoms(scan, template = template)
+            scan = fix_dicoms(scan, template = template)
         
         #edit so if not filter it reads the full files, otherwise it stops before pixel values, then reads pixel values after filtering
         if filter_tags:

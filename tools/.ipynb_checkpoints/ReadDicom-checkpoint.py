@@ -20,7 +20,7 @@ from matplotlib import pyplot as plt
 
 class ReadDicom(ReadScan):
     
-    def __init__(self, filename, filter_tags = False, window_level = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False, fix_dicoms = False):
+    def __init__(self, filename, filter_tags = False, window_level = False, hounsfield_units = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False, fix_dicoms_ = False):
         
         # add decompress option... decompress self.scan, save self.scan with new PixelData and TransferSyntaxUID...? or other decompress() option?
         # have clip_val edit arr 
@@ -40,10 +40,10 @@ class ReadDicom(ReadScan):
         #add something to check for inconsistencies in dicom files...slice thickness, etc., 
         list_glob = glob(os.path.join(filename, '**/*.dcm'), recursive = True); list_glob.sort(); #list_glob.reverse()
         scan = [dcm.dcmread(file) for file in list_glob]
-        if fix_dicoms: 
-            scan = fixDicoms(scan)
-        if clip_vals:
-            scan = clipVals(scan, clip_vals)
+        if fix_dicoms_: 
+            scan = fix_dicoms(scan)
+#         if clip_vals:
+#             scan = clipVals(scan, clip_vals)
         
         
         #edit so if not filter it reads the full files, otherwise it stops before pixel values, then reads pixel values after filtering
@@ -76,12 +76,17 @@ class ReadDicom(ReadScan):
         window_center, window_width, rescale_intercept, rescale_slope = super().getWinLevAttr_dcm(scan[0])
         if window_level:
             arr = super().winLev(arr, window_center, window_width, rescale_intercept, rescale_slope)
+        print(arr.shape)
+        print(arr.dtype)
+        if clip_vals:
+            arr = clip_arr_vals(arr, clip_vals, hounsfield_units = True, rescale_slope = rescale_slope, rescale_intercept = rescale_intercept)#.astype('uint16')
+        print(arr.shape)
+        print(arr.dtype)
+        if hounsfield_units:
+            arr = hounsfield(arr, rescale_slope, rescale_intercept)
             
         type_arr = arr.dtype
         
-#         if clip_vals:
-            
-#             arr = np.clip(arr, clip_vals[0], clip_vals[1]).astype(type_arr)
 
         self.root_file = filename
         self.root_type = 'DICOM'
@@ -104,21 +109,21 @@ class ReadDicom(ReadScan):
         
         transverse = self.arr[..., int(self.arr.shape[2]/2)]
         transverse = cv2.resize(transverse, dsize = (int(self.range[1]), int(self.range[0])), interpolation = cv2.INTER_CUBIC); transverse = np.rot90(transverse)
-        transverse = normalizeArr(transverse, [0, 1])
+        transverse = normalize_arr(transverse, [0, 1])
         sagittal = self.arr[int(self.arr.shape[0]/2), ...]
         sagittal = cv2.resize(sagittal, dsize = (int(self.range[2]), int(self.range[0])), interpolation = cv2.INTER_CUBIC); sagittal = np.rot90(sagittal); sagittal = np.flip(sagittal, 0)
-        sagittal = normalizeArr(sagittal, [0, 1])
+        sagittal = normalize_arr(sagittal, [0, 1])
         coronal = self.arr[:, int(self.arr.shape[1]/2), :] 
         coronal = cv2.resize(coronal, dsize = (int(self.range[2]), int(self.range[1])), interpolation = cv2.INTER_CUBIC); coronal = np.rot90(coronal); coronal = np.flip(coronal, 0)
-        coronal = normalizeArr(coronal, [0, 1])
+        coronal = normalize_arr(coronal, [0, 1])
         ims = [transverse, sagittal, coronal]
         
-        plotRes([transverse, coronal, sagittal], mag = 1.0)
+        plot_res([transverse, coronal, sagittal], mag = 1.0)
         
              
     def save_as(self, save_dir):
         
-        buildDir(save_dir)
+        build_dir(save_dir)
         
         if not self.flip:
             arr = np.swapaxes(self.arr, 0, 2); arr = np.flip(arr, 1); arr = np.flip(arr, 0); 
@@ -127,14 +132,13 @@ class ReadDicom(ReadScan):
             print('ADD FIX')
         
         if self.decompress:
-            self.scan = decompressDicoms(self.scan)
+            self.scan = decompress_dicoms(self.scan)
     
         for num, file in enumerate(self.scan):
 #             file.PixelData = self.arr[num, ...].astype('int16').tobytes()     # update dicom files
             file.PixelData = arr[num, ...].astype('int16').tobytes()
             save_loc = os.path.join(save_dir, str(num).zfill(4) + '.dcm')
-            buildDir(save_dir)
+            build_dir(save_dir)
             file.save_as(save_loc)
 
         return
-        
