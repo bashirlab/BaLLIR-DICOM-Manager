@@ -10,7 +10,7 @@ import matplotlib
 
 class ReadPairNifti(ReadPair):
     
-    def __init__(self, scan, mask, colors = ['#2c2cc9', '#06b70c', '#eaf915'], transparency = 0.3):
+    def __init__(self, scan, mask, colors = ['#06b70c', '#2c2cc9', '#eaf915'], transparency = 0.3):
         
         self.scan = scan
         self.scan.arr = np.flip(np.flip(np.swapaxes(scan.get_fdata(), 0,1), 2), 0) # np.flip(np.swapaxes(self.scan.arr, 0,1), 0)
@@ -25,7 +25,7 @@ class ReadPairNifti(ReadPair):
         rgb = np.array([np.copy(rgb) for i in range(3)]) #build RGB
         rgb_orig = np.copy(rgb)
         for i in range(3): rgb[i,...][self.mask.arr > 0] *= (1-transparency)
-        for i in range(3): rgb[i,...][self.mask.arr > 0] += rgb_colors[0][i] * transparency #color in mask
+        for i in range(3): rgb[i,...][self.mask.arr > 0] += rgb_colors[1][i] * transparency #color in mask
 #         if rotate: rgb = np.rot90(rgb, axes = (1,2)) 
 #         if rotate: rgb_orig = np.rot90(rgb_orig, axes = (1,2)) 
 

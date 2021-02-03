@@ -44,7 +44,7 @@ def print_range(arr):
 
 
 
-def plot_res(list_img, mag = 1, row_col = False, legend = False):
+def plot_res(list_img, mag = 1, row_col = False, legend = False, legend_size = 12):
     
     '''
     list_img[list] = list of images to plot
@@ -56,31 +56,26 @@ def plot_res(list_img, mag = 1, row_col = False, legend = False):
     if not row_col : row_col = [1, len(list_img)]
     fig = plt.figure(figsize = (15 * mag, 15 * mag))
     
-    # add_subplot(nrows, ncols, index, **kwargs)
     for i in range(1, (1 + len(list_img))):
         ax = fig.add_subplot(row_col[0], row_col[1], i)
-        if legend: 
-            legend_elements = [Patch(facecolor = legend[i-1][1], edgecolor = legend[i-1][1], label = legend[i-1][0])]
-            ax.legend(handles=legend_elements, loc='upper right', prop={'size': 15 * mag})
-
+        if legend_size:
+            legend_elements = []
+            for j in range(len(legend[0])):
+                legend_elements.append(Patch(facecolor = legend[1][j], edgecolor = legend[1][j], label = legend[0][j]))
+            ax.legend(handles=legend_elements, loc='upper left', prop={'size':  legend_size * mag})
         plt.imshow((255*list_img[i - 1]).astype(np.uint8), cmap = 'gray')
     
     plt.show()
     
 
-
-
-
-
-
 def remove_mac(dir_mac):
     
-    list_ds = glob(os.path.join(dir_mac, '.DS_Store'), recursive = False)
+    list_ds = glob(os.path.join(dir_mac, '.DS_Store'))
     for file in list_ds: os.remove(file) 
     list_ds = glob(os.path.join(dir_mac, '**/.DS_Store'), recursive = True)
     for file in list_ds: os.remove(file) 
        
-    list_os = glob(os.path.join(dir_mac, '__MACOSX'), recursive = False)
+    list_os = glob(os.path.join(dir_mac, '__MACOSX'))
     for file in list_os: shutil.rmtree(file) 
     list_os = glob(os.path.join(dir_mac, '**/__MACOSX'), recursive = True)
     for file in list_os: shutil.rmtree(file) 
@@ -194,11 +189,5 @@ def unq(list_full):
 def head(list_inp, len_head = 5):
     
     print(*list_inp[:len_head], sep = '\n')
-    
-    return
-
-def add_lib():
-    
-    
     
     return

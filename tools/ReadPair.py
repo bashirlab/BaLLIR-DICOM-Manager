@@ -30,7 +30,7 @@ def save_rgb(rgb, dir_save):
 
 class ReadPair:
      
-    def __init__(self, scan, mask, remove_empties = False, colors = ['#2c2cc9', '#06b70c', '#eaf915'], transparency = 0.3, rotate = True, sync_attributes = False, round_attributes = False, sync_slices = False):
+    def __init__(self, scan, mask, remove_empties = False, colors = ['#06b70c', '#2c2cc9', '#eaf915'], transparency = 0.3, rotate = True, sync_attributes = False, round_attributes = False, sync_slices = False):
         """
         
         sync_attributes[list]: list of attributes to copy from scan to mask 
@@ -89,7 +89,7 @@ class ReadPair:
         rgb = np.array([np.copy(rgb) for i in range(3)]) #build RGB
         rgb_orig = np.copy(rgb)
         for i in range(3): rgb[i,...][self.mask.arr > 0] *= (1-transparency)
-        for i in range(3): rgb[i,...][self.mask.arr > 0] += rgb_colors[0][i] * transparency #color in mask
+        for i in range(3): rgb[i,...][self.mask.arr > 0] += rgb_colors[1][i] * transparency #color in mask
         if rotate: rgb = np.rot90(rgb, axes = (1,2)) 
         if rotate: rgb_orig = np.rot90(rgb_orig, axes = (1,2)) 
 
@@ -134,7 +134,9 @@ class ReadPair:
         self.coronal = coronal
         self.sagittal = sagittal
 
-        plot_res(list_img = [transverse, coronal, sagittal], mag = 1.0, row_col = [3, 1], legend = [['Ground Truth', self.colors[0]],['Ground Truth', self.colors[0]],['Ground Truth', self.colors[0]]])
+        legend_ = [['Ground Truth'], [self.colors[1]]]#[['TP: Overlap', 'FN: Ground Truth', 'FP: Segmentation Mask'], res_nib.colors]
+#         [['Ground Truth'], [self.colors[1]]
+        plot_res(list_img = [transverse, coronal, sagittal], mag = 1.0, row_col = [3, 1], legend = legend_)
         
     
 
