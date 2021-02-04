@@ -101,7 +101,7 @@ class ReadPair:
         self.colors = colors
         
         
-    def orthoview(self):
+    def orthoview(self, legend_ = [['Ground Truth'], [1]]):
         
         
         #TRANSVERSE
@@ -134,13 +134,13 @@ class ReadPair:
         self.coronal = coronal
         self.sagittal = sagittal
 
-        legend_ = [['Ground Truth'], [self.colors[1]]]#[['TP: Overlap', 'FN: Ground Truth', 'FP: Segmentation Mask'], res_nib.colors]
-#         [['Ground Truth'], [self.colors[1]]
+        if legend_:
+            legend_[1] = [self.colors[ind] for ind in legend_[1]]
         plot_res(list_img = [transverse, coronal, sagittal], mag = 1.0, row_col = [3, 1], legend = legend_)
         
     
 
-    def save_as(self, loc_save, cat = True, ext = '.png', label = 'Ground Truth'):
+    def save_as(self, loc_save, cat = True, ext = '.png', legend_ = [['Ground Truth'], [1]], legend_size = False):
         
         if cat:
             
@@ -154,20 +154,15 @@ class ReadPair:
             sagittal = np.copy(self.sagittal); 
             sagittal = cv2.resize(sagittal, dsize = (1024, int(1024 * (self.sagittal.shape[0]/self.sagittal.shape[1]))), interpolation = cv2.INTER_CUBIC); 
             sagittal = normalize_arr(sagittal, [0, 255]).astype(np.uint8)
-            cat = np.concatenate ((transverse, coronal, sagittal), axis = 0)
+            cat_single = np.concatenate ((transverse, coronal, sagittal), axis = 0)#/255
+            self.cat_single = cat_single
             
-            figsize = (16,(int(1024 * (self.transverse.shape[0]/self.transverse.shape[1])) +   int(1024 * (self.coronal.shape[0]/self.coronal.shape[1])) + int(1024 * (self.sagittal.shape[0]/self.sagittal.shape[1])))/64)
-            plt.figure(num=None, figsize=figsize, dpi= 64, facecolor='w', edgecolor='k') # figsize=(16, 24)
-            legend_elements = [Patch(facecolor = self.colors[0], edgecolor = self.colors[0], label = label)]
-            plt.legend(handles=legend_elements, loc='upper right', prop={'size': 25})
-            plt.tight_layout()
-            plt.imshow(cat)
-            plt.tick_params(left=False,
-                            bottom=False,
-                            labelleft=False,
-                            labelbottom=False)
-            plt.savefig(loc_save)
-            plt.close()
+            if legend_:
+                legend_[1] = [self.colors[ind] for ind in legend_[1]]
+                if not legend_size:
+                    legend_size = 25
+            fig_size = (16,(int(1024 * (self.transverse.shape[0]/self.transverse.shape[1])) +   int(1024 * (self.coronal.shape[0]/self.coronal.shape[1])) + int(1024 * (self.sagittal.shape[0]/self.sagittal.shape[1])))/64)
+            plot_res(list_img = [cat_single], mag = 1.0, row_col = [1, 1], legend = legend_, legend_size = legend_size, axis = False, tight = True, fig_size = fig_size, loc_save = loc_save, close = True)
             
         else:
             

@@ -13,6 +13,21 @@ from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
 
 
+
+def dice_stats(dict_dice):
+    
+    dict_dice_sorted = {k: v for k, v in sorted(dict_dice.items(), key=lambda item: item[1])}
+    
+    print('AVERAGE DICE: ', str(sum(v for v in dict_dice.values() ) / len(dict_dice)), '\n')
+    
+    print('LOWEST DICE: ')
+    for num, (key, value) in enumerate(dict_dice_sorted.items()): 
+        print ('\t', key, ' : ', value)
+        if num > 5: break
+    
+    return dict_dice_sorted
+
+
 def unzip_check(dir_unzip):
     
     list_zip = glob(os.path.join(dir_unzip, '**/*.zip'), recursive = True)
@@ -44,7 +59,7 @@ def print_range(arr):
 
 
 
-def plot_res(list_img, mag = 1, row_col = False, legend = False, legend_size = 12):
+def plot_res(list_img, mag = 1, row_col = False, legend = False, legend_size = 12, axis = True, tight = False, fig_size = False, loc_save = False, close = False):
     
     '''
     list_img[list] = list of images to plot
@@ -52,20 +67,31 @@ def plot_res(list_img, mag = 1, row_col = False, legend = False, legend_size = 1
     row_col[list] = list of [row, col] for organization of plots
     legend[list] = nested list [[label1, color1], [label2, color2],...]
     '''
-    
+        
     if not row_col : row_col = [1, len(list_img)]
-    fig = plt.figure(figsize = (15 * mag, 15 * mag))
+    if fig_size:
+        fig = plt.figure(figsize = fig_size)
+    else:
+        fig = plt.figure(figsize = (15 * mag, 15 * mag), dpi = 64)
     
     for i in range(1, (1 + len(list_img))):
         ax = fig.add_subplot(row_col[0], row_col[1], i)
-        if legend_size:
+        if legend:
             legend_elements = []
             for j in range(len(legend[0])):
                 legend_elements.append(Patch(facecolor = legend[1][j], edgecolor = legend[1][j], label = legend[0][j]))
             ax.legend(handles=legend_elements, loc='upper left', prop={'size':  legend_size * mag})
-        plt.imshow((255*list_img[i - 1]).astype(np.uint8), cmap = 'gray')
+        if loc_save: plt.imshow((list_img[i - 1]).astype(np.uint8), cmap = 'gray')
+        if not loc_save: plt.imshow((255*list_img[i - 1]).astype(np.uint8), cmap = 'gray')
+       
+    if not axis: plt.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+    if tight: plt.tight_layout()
     
-    plt.show()
+    if not loc_save: plt.show()
+    
+    if loc_save: plt.savefig(loc_save)
+    if close: plt.close() #doesn't work for some reason...
+    
     
 
 def remove_mac(dir_mac):
