@@ -50,10 +50,16 @@ class ReadDicom(ReadScan):
         if filter_tags:
             dict_tags, dict_max = check_tags(scan, filter_tags)
             self.dict_tags = dict_tags
+            print(f'dict tags: {dict_tags}')
             self.dict_max = dict_max
+            print(f'dict max: {dict_max}')
             for key, value in filter_tags.items():
                 if value == 'max':
                     scan = [file for file in scan if getattr(file, key) == dict_max[key]]
+                elif value == 'highest':
+                    vals = [float(val.split('--')[-1]) for val in dict_tags.keys() if val.split('--')[0] == key]
+#                     vals = [float(val.split('--')[-1]) for val in self.dict_tags.keys()]
+                    scan = [file for file in scan if getattr(file, key) == max(vals)]
                 else:
                     scan = [file for file in scan if getattr(file, key) == value]
                 
