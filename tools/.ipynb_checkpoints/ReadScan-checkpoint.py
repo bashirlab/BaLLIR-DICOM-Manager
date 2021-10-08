@@ -1,7 +1,15 @@
 from glob import glob
 import numpy as np
 import os
-import cv2
+try:
+    import cv2
+except:
+    from subprocess import STDOUT, check_call
+    check_call(['apt-get', 'update'],
+         stdout=open(os.devnull,'wb'), stderr=STDOUT) 
+    check_call(['apt-get', 'install', 'ffmpeg', 'libsm6', 'libxext6', '-y'],
+         stdout=open(os.devnull,'wb'), stderr=STDOUT) 
+    import cv2
 from matplotlib import pyplot as plt
 
 

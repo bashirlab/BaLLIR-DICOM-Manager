@@ -7,11 +7,28 @@ import os
 import tempfile
 import datetime
 import copy
+import random
 
 #custom imports
 from tools.shortcuts import *
 
 
+def get_middle_slices(arr, axis = 2, num_slices = 1):
+    
+    # do smarter:
+    if axis == 2:
+        list_nonzero = [np.amax(arr[..., num]) for num in range(arr.shape[2])]
+    elif axis == 1:
+        list_nonzero = [np.amax(arr[:,num,:]) for num in range(arr.shape[1])]
+    elif axis == 0:
+        list_nonzero = [np.amax(arr[num, ...]) for num in range(arr.shape[0])]
+        
+    list_nonzero = [i for i, j in enumerate(list_nonzero) if j > 0]
+    step_size = int(len(list_nonzero)/(num_slices+1))
+    middle_slices = [list_nonzero[0] + (step_size*(i+1)) for i in range(num_slices)]
+    range_mask = len(list_nonzero) 
+    
+    return middle_slices, range_mask
 
 
 def decompress_dicom(file_dicom):
@@ -42,13 +59,9 @@ def hounsfield(arr, rescale_slope, rescale_intercept, reverse = False):
     return arr
 
 
-def clip_arr_vals(arr, clip_vals, hounsfield_units = False, rescale_slope = False, rescale_intercept = False):
+def clip_arr_vals(arr, clip_vals):
     
-    if hounsfield_units: 
-        arr = hounsfield(arr, rescale_slope, rescale_intercept, reverse = False)
     arr = np.clip(arr, clip_vals[0], clip_vals[1])
-    if hounsfield_units: 
-        arr = hounsfield(arr, rescale_slope, rescale_intercept, reverse = True).astype('int16')
     
     return arr
 
@@ -80,12 +93,12 @@ def check_tags(files_dicom, list_tags):
             tmp_counts.append(count_tags.count(unq))
         dict_max[key] = unq_tags[tmp_counts.index(max(tmp_counts))]
         
-    for key, value in dict_tags.items():
-        print(key.split('--'), ' : ', value)
+#     for key, value in dict_tags.items():
+#         print(key.split('--'), ' : ', value)
 #         [tag, val] = key.split('--')
 
-    for key, value in dict_max.items():
-        print('most frequent value for ', key, ' key: ', value) 
+#     for key, value in dict_max.items():
+#         print('most frequent value for ', key, ' key: ', value) 
               
     return dict_tags, dict_max
 
@@ -94,10 +107,17 @@ def check_tags(files_dicom, list_tags):
 # -- round ImagePositionPatient tag values -- prevents dicom2nifti error
 def round_position_patient(dicom_files):
     
-#     print('ROUNDING POSITIONS')
     for dicom_file in dicom_files:
         dicom_file.ImagePositionPatient = [float(round(pos, 1)) for pos in dicom_file.ImagePositionPatient]
+#         dicom_file.ImageOrientationPatient = [float(round(pos, 1)) for pos in dicom_file.ImageOrientationPatient]
         
+    return dicom_files
+
+def sync_position_patient_xy(dicom_files):
+        
+    for dicom_file in dicom_files:
+        dicom_file.ImagePositionPatient[:2] = dicom_files[0].ImagePositionPatient[:2]
+    
     return dicom_files
 
 
@@ -170,7 +190,7 @@ def new_dicom(arr = False):
     ds.PixelRepresentation = 1 #0 for unsigned, 1 for signed
     ds.SamplesPerPixel = 1
     ds.PhotometricInterpretation = 'MONOCHROME2'
-    if arr: ds.PixelData = arr.astype('int16').tobytes()
+    if isinstance(arr, np.ndarray): ds.PixelData = arr.astype('int16').tobytes()
 
     ds.save_as(filename_little_endian)
 
@@ -254,7 +274,7 @@ def step_sizes(dicom_files):
 
 def reset_slices(dicom_files, slice_steps, slice_steps_unq):
     
-    print('ERROR RESETTING SLICE POSITIONS')
+    print(f'ERROR RESETTING SLICE POSITIONS2: {slice_steps}')
     step_counts = []
     for step in slice_steps_unq:
         step_counts.append(slice_steps.count(step))
@@ -262,7 +282,8 @@ def reset_slices(dicom_files, slice_steps, slice_steps_unq):
     
     slice_start = float(round(dicom_files[0].ImagePositionPatient[2],1))
     for num in range(1, len(dicom_files)):
-        dicom_files[num].ImagePositionPatient[2] = float(round(slice_start + (num * step_size),1))
+        dicom_files[num].ImagePositionPatient[2] = float(round(slice_start + (num * step_size), 1))
+        dicom_files[num].ImageOrientationPatient = list(np.round(dicom_files[0].ImageOrientationPatient, 1))
     
     return dicom_files
 
@@ -270,7 +291,7 @@ def reset_slices(dicom_files, slice_steps, slice_steps_unq):
 
 def remove_duplicates(dicom_files, slice_steps, slice_locs):
     
-    print('ERROR: DUPLICATE SLICE LOCATIONS')
+#     print('ERROR: DUPLICATE SLICE LOCATIONS')
     slice_breaks = [0]
     for num in range(1, len(slice_steps)):
         if slice_steps[num] != slice_steps[num - 1]:
@@ -315,23 +336,22 @@ def fix_dicoms(dicom_files):
     # remove duplicate slice locations
     slice_steps, slice_steps_unq, slice_locs, slice_locs_unq = step_sizes(dicom_files) 
     if len(slice_locs) > len(slice_locs_unq):
-        print('DUPLICATES')
+#         print('DUPLICATES')
         dicom_files = remove_duplicates(dicom_files, slice_steps, slice_locs)
         
     # sort files -- 
 #     slice_steps, slice_steps_unq, slice_locs, slice_locs_unq = stepSizes(dicom_files)
     #dicom_files = sortDicoms(dicom_files)
+    
+    dicom_files = sync_position_patient_xy(dicom_files)
         
     # final fix --rewrte slice position with most common thickness
     slice_steps, slice_steps_unq, slice_locs, slice_locs_unq = step_sizes(dicom_files)
     if len(slice_steps_unq) > 1:
-        print('inconsistent slice steps')
+#         print('inconsistent slice steps')
         reset_slices(dicom_files, slice_steps, slice_steps_unq)
         
     return dicom_files
-
-
-
 
 
 def save_dicoms(dicom_files, save_dir, overwrite = False):

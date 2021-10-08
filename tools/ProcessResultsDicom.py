@@ -13,15 +13,19 @@ from scipy import interpolate
 from scipy.ndimage import binary_erosion
 
 
-
-class ProcessResultsNifti(ReadPairNifti):
+class ProcessResultsDicom(ReadPair):
     
     def __init__(self, scan, mask_gt, mask_alg, colors = ['#06b70c', '#2c2cc9', '#eaf915'], transparency = 0.3, outline = False, legend_size = False, _middle_slice = False, preprocess_arr = False):
         
-        super().__init__(scan = scan, mask = mask_gt, colors = colors, transparency = transparency)
+        '''
         
+        '''
+        
+        super().__init__(scan = scan, mask = mask_gt, colors = colors, transparency = transparency)
+            
         self.mask_alg = mask_alg
-        self.mask_alg.arr = np.flip(np.flip(np.swapaxes(mask_alg.get_fdata(), 0, 1), 2), 0)
+            
+#         self.mask_alg.arr = np.flip(np.flip(np.swapaxes(mask_alg.get_fdata(), 0, 1), 2), 0)
         
         if _middle_slice:
             middle_slice, range_mask = get_middle_slices(self.mask.arr, axis = 2, num_slices = _middle_slice)
@@ -32,6 +36,9 @@ class ProcessResultsNifti(ReadPairNifti):
                 self.scan.arr = self.scan.arr[...,np.newaxis]#np.concatenate([self.scan.arr,self.scan.arr], axis = )
                 self.mask.arr = self.mask.arr[...,np.newaxis]
                 self.mask_alg.arr = self.mask_alg.arr[...,np.newaxis]
+                
+        
+            
         
         self.legend_size = legend_size
         if preprocess_arr:
@@ -65,9 +72,9 @@ class ProcessResultsNifti(ReadPairNifti):
         false_negative = self.mask.arr - self.mask_alg.arr; false_negative[false_negative < 0] = 0; false_negative[false_negative > 0] = 1
         self.false_negative = false_negative
         mask_all =  self.false_negative + self.true_positive + self.false_positive; false_negative[false_negative < 0] = 0; true_positive[true_positive > 0] = 1
-        self.mask_all = mask_all; mask_all[mask_all < 0] = 0; mask_all[mask_all > 0] = 1
+        self.mask_all = mask_all; mask_all[mask_all < 0] = 0#; mask_all[mask_all > 0] = 1
         
-#         self.dice_score = float('{0:.4f}'.format(round(np.sum(self.true_positive)/np.sum(self.mask_all), 4)))
+        
         mask1 = np.copy(self.mask_alg.arr)
         mask1[mask1 < 0] = 0; mask1[mask1 > 1] = 1
         mask2 = np.copy(self.mask.arr)

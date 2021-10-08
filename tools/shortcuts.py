@@ -88,10 +88,9 @@ def plot_res(list_img, mag = 1, row_col = False, legend = False, legend_size = 1
     if tight: plt.tight_layout()
     
     if not loc_save: plt.show()
-    
     if loc_save: plt.savefig(loc_save)
-    if close: plt.close() #doesn't work for some reason...
-    
+    if close: plt.close() 
+        
     
 
 def remove_mac(dir_mac):
@@ -111,13 +110,14 @@ def remove_mac(dir_mac):
 
 
 # clean up a little so it does recursive stuff smarter -- descend into dir after unzipping
-def unzip_rec(file_zip, remove_zips = False, remove_mac = True): #add remove zip files option, add removeMac option
+def unzip_rec(file_zip, remove_zips = False, _remove_mac = True): #add remove zip files option, add removeMac option
     
     if file_zip[-4:] == '.zip':
         with zipfile.ZipFile(file_zip, 'r') as zip_ref:
             zipto = file_zip.split('.zip')[0]
             while ' .' in zipto:
                 zipto = '.'.join(zipto.split(' .')) 
+            zipto = "_".join(zipto).split(" ")
             try:
                 zip_ref.extractall(zipto)
             except:
@@ -160,12 +160,12 @@ def unzip_rec(file_zip, remove_zips = False, remove_mac = True): #add remove zip
                         dst = dst[:-1]
                     if not dst == os.path.join(zipto, tail):
                         print('ERROR: empty space on dir name -- ', zipto)
-                        shutil.move(os.path.join(zipto, tail), src)
+                        shutil.move(os.path.join(zipto, tail), dst)
         list_glob = glob(os.path.join(dir_zip, '**/*.zip'), recursive = True)
         list_unzipped = [file for file in list_glob if not os.path.exists(file.split('.zip')[0]) and not os.path.exists(''.join(file.split('.zip')[0].split(' ')))]
         if len(list_unzipped) == 0 + len(list_error) : zips_remain = False 
             
-    if remove_mac: removeMac(dir_zip)
+    if _remove_mac: remove_mac(dir_zip)
     
     return
 
