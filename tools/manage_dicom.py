@@ -221,15 +221,16 @@ def decompress_dicoms(dicom_files):
     
     for file in dicom_decompressed:
         
-        file.BitsAllocated = 16
-        file.BitsStored = 16
-        file.HighBit = 15
-        file.PixelRepresentation = 1 #0 for unsigned, 1 for signed
-        file.SamplesPerPixel = 1
-        file.PhotometricInterpretation = 'MONOCHROME2'
+#         file.BitsAllocated = 16
+#         file.BitsStored = 16
+#         file.HighBit = 15
+#         file.PixelRepresentation = 1 #0 for unsigned, 1 for signed
+#         file.SamplesPerPixel = 1
+#         file.PhotometricInterpretation = 'MONOCHROME2'
         file.is_little_endian = True
         file.is_implicit_VR = False
-        file.PixelData = file.pixel_array.astype('int16').tobytes()
+#         file.PixelData = file.pixel_array.astype('int16').tobytes()
+        file.PixelData = file.pixel_array.tobytes()
         file.file_meta.TransferSyntaxUID = dcm.uid.ExplicitVRLittleEndian
     
     return dicom_decompressed
@@ -289,24 +290,34 @@ def reset_slices(dicom_files, slice_steps, slice_steps_unq):
 
 
 
-def remove_duplicates(dicom_files, slice_steps, slice_locs):
+# def remove_duplicates(dicom_files, slice_steps, slice_locs):
     
-#     print('ERROR: DUPLICATE SLICE LOCATIONS')
-    slice_breaks = [0]
-    for num in range(1, len(slice_steps)):
-        if slice_steps[num] != slice_steps[num - 1]:
-            if slice_breaks[-1] != (num):
-                slice_breaks.append(num + 1)
-    slice_breaks.append(len(slice_steps))
-    section_sizes = []
-    for i in range(1,len(slice_breaks)):
-        section_sizes.append(slice_breaks[i] - slice_breaks[i-1])
-    slice_max = section_sizes.index(max(section_sizes))
-    list_max = [num for num in range(slice_breaks[slice_max], slice_breaks[slice_max+1])]
-    for num in range(len(dicom_files) -1, -1, -1):
-        if slice_locs.count(slice_locs[num]) > 1 and not num in list_max:
-            del dicom_files[num]
+# #     print('ERROR: DUPLICATE SLICE LOCATIONS')
+#     slice_breaks = [0]
+#     for num in range(1, len(slice_steps)):
+#         if slice_steps[num] != slice_steps[num - 1]:
+#             if slice_breaks[-1] != (num):
+#                 slice_breaks.append(num + 1)
+#     slice_breaks.append(len(slice_steps))
+#     section_sizes = []
+#     for i in range(1,len(slice_breaks)):
+#         section_sizes.append(slice_breaks[i] - slice_breaks[i-1])
+#     slice_max = section_sizes.index(max(section_sizes))
+#     list_max = [num for num in range(slice_breaks[slice_max], slice_breaks[slice_max+1])]
+#     for num in range(len(dicom_files) -1, -1, -1):
+#         if slice_locs.count(slice_locs[num]) > 1 and not num in list_max:
+#             list_max.append(slice_locs[num])
+#             del dicom_files[num]
         
+#     return dicom_files
+
+def remove_duplicates(dicom_files, slice_steps, slice_locs):
+    slice_locs = []
+    for file_num in range(len(dicom_files) -1, -1, -1):
+        if dicom_files[file_num].ImagePositionPatient[2] in slice_locs:
+            del dicom_files[file_num]
+        else:
+            slice_locs.append(dicom_files[file_num].ImagePositionPatient[2])
     return dicom_files
 
 
@@ -336,7 +347,7 @@ def fix_dicoms(dicom_files):
     # remove duplicate slice locations
     slice_steps, slice_steps_unq, slice_locs, slice_locs_unq = step_sizes(dicom_files) 
     if len(slice_locs) > len(slice_locs_unq):
-#         print('DUPLICATES')
+        print('DUPLICATES')
         dicom_files = remove_duplicates(dicom_files, slice_steps, slice_locs)
         
     # sort files -- 
@@ -348,7 +359,7 @@ def fix_dicoms(dicom_files):
     # final fix --rewrte slice position with most common thickness
     slice_steps, slice_steps_unq, slice_locs, slice_locs_unq = step_sizes(dicom_files)
     if len(slice_steps_unq) > 1:
-#         print('inconsistent slice steps')
+        print('inconsistent slice steps')
         reset_slices(dicom_files, slice_steps, slice_steps_unq)
         
     return dicom_files

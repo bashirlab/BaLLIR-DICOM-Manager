@@ -1,4 +1,4 @@
-from tools.ReadScan import *
+                                                                                                                       from tools.ReadScan import *
 from tools.manage_dicom import *
 from tools.shortcuts import *
 
@@ -25,7 +25,7 @@ def flatten(t):
 
 class ReadDicom(ReadScan):
     
-    def __init__(self, filename, filter_tags = False, window_level = False, hounsfield_units = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False, fix_dicoms_ = False, reverse_ = False, remove_duplicates = False, slice_locs = False):
+    def __init__(self, filename, filter_tags = False, window_level = False, hounsfield_units = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False, fix_dicoms_ = False, reverse_ = False, remove_duplicates = False, slice_locs = False, resize = False):
         
         # add decompress option... decompress self.scan, save self.scan with new PixelData and TransferSyntaxUID...? or other decompress() option?
         # have clip_val edit arr 
@@ -42,6 +42,7 @@ class ReadDicom(ReadScan):
         sort_by[dict]: dicom tag and indexused to sort array (e.g., sort_by = {'ImagePositionPatient': 2})
         decompress[bool]: set TransferSyntaxUID to LittleEndianExplicit, array as type int16
         slice_locs[list]: will load in slices with closest SliceLocation to list items
+        resize[list]: [y,x] dims for 2d image resize
         """
         
         #add something to check for inconsistencies in dicom files...slice thickness, etc., 
@@ -55,12 +56,14 @@ class ReadDicom(ReadScan):
         if reverse_: list_glob.reverse()
         scan = [dcm.dcmread(file) for file in list_glob]
         
-        print(len(scan))
-        print(len(slice_locs))
+        if decompress:
+            scan = decompress_dicoms(scan)
+#             scan = [decompress_dicoms(file) for file in scan]
+        
+        
         if slice_locs:
             scan_locs = [file.SliceLocation for file in scan]
             scan = [scan[scan_locs.index(closest(scan_locs, loc))] for loc in slice_locs]
-        print(len(scan))
                 
         if remove_duplicates:
             dict_series = {}
@@ -140,7 +143,11 @@ class ReadDicom(ReadScan):
             for arr_shape in unq_arr_shapes: print(f'\t{arr_shape}: {arr_shapes.count(arr_shape)}')
         
         # load pixel_array as numpy array
-        arr = np.array([file.pixel_array for file in scan])
+        
+        if resize:
+            arr = np.array([cv2.resize(file.pixel_array, dsize=(resize[0], resize[1]), interpolation=cv2.INTER_CUBIC) for file in scan])
+        else:
+            arr = np.array([file.pixel_array for file in scan])
         arr = np.swapaxes(arr, 0, 2); arr = np.flip(arr, 1)
             
         if not flip_arr: arr = np.flip(arr, 2)    
@@ -156,7 +163,6 @@ class ReadDicom(ReadScan):
             arr = clip_arr_vals(arr, clip_vals)
         
         type_arr = arr.dtype
-        
 
         self.root_file = filename
         self.root_type = 'DICOM'
@@ -201,14 +207,18 @@ class ReadDicom(ReadScan):
             arr = np.swapaxes(self.arr, 0, 2); arr = np.flip(arr, 1); arr = np.flip(arr, 0); 
             print('ADD FIX')
         
-        if self.decompress:
-            self.scan = decompress_dicoms(self.scan)
+        
     
         for num, file in enumerate(self.scan):
 #             file.PixelData = self.arr[num, ...].astype('int16').tobytes()     # update dicom files
+
+
+            
             file.PixelData = arr[num, ...].astype('int16').tobytes()
             save_loc = os.path.join(save_dir, str(num).zfill(4) + '.dcm')
             build_dir(save_dir)
-            file.save_as(save_loc)
+            file.save_as(save_loc, write_like_original=True)
+            
+            
 
         return

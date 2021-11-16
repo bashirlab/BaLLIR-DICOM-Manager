@@ -127,8 +127,6 @@ def nifti2dicom(nib_loc, template_dcm, dir_save):
         #slice_dcm = buildDCM()
         slice_dcm = copy.deepcopy(template_dcm)
         slice_dcm.file_meta.TransferSyntaxUID = '1.2.840.10008.1.2'
-        slice_dcm.Rows = nib_data.shape[0]
-        slice_dcm.Columns = nib_data.shape[1]
         slice_dcm.InstanceNumber = num_slice
 
         slice_dcm.ImagePositionPatient[2] = float(template_dcm.ImagePositionPatient[2] + (nib_data.shape[2]-1-num_slice*template_dcm.SliceThickness))
