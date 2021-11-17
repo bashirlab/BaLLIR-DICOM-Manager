@@ -1,13 +1,14 @@
-                                                                                                                       from tools.ReadScan import *
-from tools.manage_dicom import *
-from tools.shortcuts import *
+import os
 
+
+import cv2
 from glob import glob
 import numpy as np
 import pydicom as dcm
-import os
-import cv2
-from matplotlib import pyplot as plt
+from natsort import natsorted
+
+
+from ballir_dicom_manager.smart_read.import ReadScan
 
 
 
@@ -21,11 +22,26 @@ def flatten(t):
 # split files by tag? --return multiple scans? -- different function for splitting files by series/some other tag.. 
 # add patient position rounding function
 # 
+def return_file_paths(file_path) -> list:
+    try:
+        if isinstance(file_path, str):
+            dicom_file_paths = glob(os.path.join(file_path, '**/*'), recursive = True)
+            dicom_file_paths  = [file for file in dicom_file_paths if not os.path.isdir(file)] 
+            return natsorted(dicom_file_paths)
+        elif isinstance(file_path, list):
+            return natsorted(file_path)
+        else:
+            raise 
+    except Exception as e:
+        print(f'MUST ENTER file_path VARIABLE OF STRING TYPE (directory) or LIST TYPE (full paths), not {type(file_path)}')
 
+def load_files(self):
+    return [dcm.dcmread(file) for file in return_file_paths(file_path)]
+    
 
 class ReadDicom(ReadScan):
     
-    def __init__(self, filename, filter_tags = False, window_level = False, hounsfield_units = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False, fix_dicoms_ = False, reverse_ = False, remove_duplicates = False, slice_locs = False, resize = False):
+    def __init__(self, file_path, filter_tags = False, window_level = False, hounsfield_units = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False, fix_dicoms_ = False, remove_duplicates = False, slice_locs = False, resize = False):
         
         # add decompress option... decompress self.scan, save self.scan with new PixelData and TransferSyntaxUID...? or other decompress() option?
         # have clip_val edit arr 
@@ -33,8 +49,8 @@ class ReadDicom(ReadScan):
         
         
         """
-        filename [string]: directory location of dicom files
-        filename [list]: list of full paths to dicom files
+        file_path [string]: directory location of dicom files
+        file_path [list]: list of full paths to dicom files
         filter_tags [dictionary]: tag/value pairs, 'max' as value selects most frequent unique tag
         window_level[bool]: True conducts window/level operation based on WindowCenter/WindowWidth/RescaleSlope/RescaleIntercept tags or defaults
         clip_vals[list]: min and max values to clip pixel array (e.g., [-250, 200])
@@ -44,16 +60,16 @@ class ReadDicom(ReadScan):
         slice_locs[list]: will load in slices with closest SliceLocation to list items
         resize[list]: [y,x] dims for 2d image resize
         """
+
+        self.sort_by = sort_by
+        self.file_path = file_path
         
-        #add something to check for inconsistencies in dicom files...slice thickness, etc., 
-        if isinstance(filename, str):
-            list_glob = glob(os.path.join(filename, '**/*.dcm'), recursive = True); list_glob.sort(); #list_glob.reverse()
-        elif isinstance(filename, list):
-            list_glob = filename.copy()
-        else:
-            print(f'MUST ENTER filename VARIABLE OF STRING TYPE (directory) or LIST TYPE (full paths), not {type(filename)}')
+
+
+
         
-        if reverse_: list_glob.reverse()
+        self.files = self.load_files()
+
         scan = [dcm.dcmread(file) for file in list_glob]
         
         if decompress:
@@ -95,17 +111,7 @@ class ReadDicom(ReadScan):
 
         
         if sort_by:
-            try:
-                if type(sort_by) == str:
-                    list_sort = [getattr(file, sort_by) for file in scan]
-                elif type(sort_by) == dict:
-                    (tag, ind), = sort_by.items()
-                    list_sort = [getattr(file, tag)[ind] for file in scan]
-                else:
-                    print('ERROR: [sort_by] enter either string or dict type as arg')
-                scan = [x for (y,x) in sorted(zip(list_sort,scan), key=lambda pair: pair[0])]
-            except Exception as e:
-                print(f'ERROR sorting: {e}')
+           
                 
         if remove_duplicates:
             scan_fix = [scan[0]]
@@ -164,7 +170,7 @@ class ReadDicom(ReadScan):
         
         type_arr = arr.dtype
 
-        self.root_file = filename
+        self.root_file = file_path
         self.root_type = 'DICOM'
         self.decompress = decompress
         #self.scan_type = 'MR', 'CT', etc.
@@ -179,7 +185,18 @@ class ReadDicom(ReadScan):
         self.rescale_intercept = rescale_intercept
         self.flip = flip_arr
         
-
+    def sort_by(self):
+         try:
+            if type(sort_by) == str:
+                list_sort = [getattr(file, sort_by) for file in scan]
+            elif type(sort_by) == dict:
+                (tag, ind), = sort_by.items()
+                list_sort = [getattr(file, tag)[ind] for file in scan]
+            else:
+                print('ERROR: [sort_by] enter either string or dict type as arg')
+            scan = [x for (y,x) in sorted(zip(list_sort,scan), key=lambda pair: pair[0])]
+        except Exception as e:
+            print(f'ERROR sorting: {e}')
         
     def orthoview(self, windowLevel = False):
         
