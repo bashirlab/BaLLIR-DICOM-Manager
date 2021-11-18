@@ -1,36 +1,29 @@
+import os
+from abc import ABC, abstractmethod
+
+import cv2
 from glob import glob
 import numpy as np
-import os
-try:
-    import cv2
-except:
-    from subprocess import STDOUT, check_call
-    check_call(['apt-get', 'update'],
-         stdout=open(os.devnull,'wb'), stderr=STDOUT) 
-    check_call(['apt-get', 'install', 'ffmpeg', 'libsm6', 'libxext6', '-y'],
-         stdout=open(os.devnull,'wb'), stderr=STDOUT) 
-    import cv2
 from matplotlib import pyplot as plt
 
 
-class ReadScan():
-    
+class ReadScan(ABC):
+    """Base class for reading and displaying file."""
+
     def __init__(self):
         pass    
     
-    def winLev(self, arr, wc, ww, ri, rs):
+    def window_level(self, arr, window_center, window_width, rescale_intercept, rescale_slope):
+        """Applying window/level to input array."""
+        lower_limit = window_center - (window_width/2)
+        upper_limit = window_center + (window_width/2)
 
-        lower_limit = wc - (ww/2)
-        upper_limit = wc + (ww/2)
-
-        hounsfield_img = (arr*rs) + ri
+        hounsfield_img = (arr*rescale_slope) + rescale_intercept
         clipped_img = np.clip(hounsfield_img, lower_limit, upper_limit)
-        windowLevel = (clipped_img/ww) - (lower_limit/ww)
-
-        return windowLevel
+        return (clipped_img/window_width) - (lower_limit/window_width)
     
     
-    def getWinLevAttr_dcm(self, tmp_dcm):
+    def return_window_level_attributes(self, tmp_dcm):
 
         attr = {'WindowCenter': 50.0, 'WindowWidth': 400.0, 'RescaleIntercept': 0.0, 'RescaleSlope': 1.0}
 
@@ -43,8 +36,8 @@ class ReadScan():
 #             else:
 #                 print('MISSING: ', key)
 
-        wc, ww, ri, rs = attr.values()
-        return wc, ww, ri, rs
+        wc, window_width, rescale_intercept, rescale_slope = attr.values()
+        return wc, window_width, rescale_intercept, rescale_slope
     
     
     def getWinLevAttr_json(self, tmp_json):
@@ -60,8 +53,8 @@ class ReadScan():
 #             else:
 #                 print('MISSING: ', key)
 
-        wc, ww, ri, rs = attr.values()
-        return wc, ww, ri, rs
+        wc, window_width, rescale_intercept, rescale_slope = attr.values()
+        return wc, window_width, rescale_intercept, rescale_slope
  
 
         for attr_num, attr_name in enumerate(attr):
@@ -72,5 +65,5 @@ class ReadScan():
                      attr_vars[attr_num] = float(tmp_json[attr_name]['Value'][0])
 #             else:
 #                 print('MISSING: ', attr_name)
-        print(str(wc) + ' ' + str(ww) + ' ' + str(ri) + ' ' + str(rs))
-        return wc, ww, ri, rs
+        print(str(wc) + ' ' + str(window_width) + ' ' + str(rescale_intercept) + ' ' + str(rescale_slope))
+        return wc, window_width, rescale_intercept, rescale_slope

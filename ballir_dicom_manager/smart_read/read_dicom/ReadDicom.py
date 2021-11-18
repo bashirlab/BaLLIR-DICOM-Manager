@@ -1,5 +1,6 @@
 import os
-
+from typing import List
+from abc import ABC, abstractmethod
 
 import cv2
 from glob import glob
@@ -8,8 +9,8 @@ import pydicom as dcm
 from natsort import natsorted
 
 
-from ballir_dicom_manager.smart_read.import ReadScan
-
+from ballir_dicom_manager.smart_read import ReadScan, FileLoader
+from ballir_dicom_manager.exception_handling import ArgErrorType
 
 
 def closest(lst, K):
@@ -19,38 +20,53 @@ def closest(lst, K):
 def flatten(t):
     return [item for sublist in t for item in sublist]
 
-# split files by tag? --return multiple scans? -- different function for splitting files by series/some other tag.. 
-# add patient position rounding function
-# 
-def return_file_paths(file_path) -> list:
-    try:
-        if isinstance(file_path, str):
-            dicom_file_paths = glob(os.path.join(file_path, '**/*'), recursive = True)
-            dicom_file_paths  = [file for file in dicom_file_paths if not os.path.isdir(file)] 
-            return natsorted(dicom_file_paths)
-        elif isinstance(file_path, list):
-            return natsorted(file_path)
-        else:
-            raise 
-    except Exception as e:
-        print(f'MUST ENTER file_path VARIABLE OF STRING TYPE (directory) or LIST TYPE (full paths), not {type(file_path)}')
 
-def load_files(self):
-    return [dcm.dcmread(file) for file in return_file_paths(file_path)]
-    
+
+class DicomLoader(FileLoader):
+    """Load DICOM files."""
+    def __init__(self, target_path) -> None:
+        super().__init__(target_path)
+
+    def load_file(self, target_path) -> dcm.dataset.Dataset:
+        try:
+            return dcm.dcmread(target_path)
+        except dcm.errors.InvalidDicomError as e:
+            print(f'{target_path} is unreadable: {e}')
+            pass 
+
+
+
+class DicomSelector:
+    """Sort, select, and filter DICOM files based on supplied parameters."""
+
+    def __init__(self, sort_slices, select_slice_locations: list, remove_duplicate_locations, filter_by_tag) -> None:
+        pass
+
+    def filter(self, dicom_files: List[dcm.dataset.Dataset]) -> List[dcm.dataset.Dataset]: 
+        is self.sort_slices: 
+            self.sort_slices()
+
+    def 
+        
+    select_slice_locations
+             scan_locs = [file.SliceLocation for file in scan]
+            scan = [scan[scan_locs.index(closest(scan_locs, loc))] for loc in slice_locs]
+
+         
+
+
+class DicomCleaner:
+    """Change DICOM tag values (for conversion to NIFTI etc)."""
+    def __init__(self) -> None:
+        pass
 
 class ReadDicom(ReadScan):
     
-    def __init__(self, file_path, filter_tags = False, window_level = False, hounsfield_units = False, clip_vals = False, sort_by = False, decompress = True, flip_arr = False, fix_dicoms_ = False, remove_duplicates = False, slice_locs = False, resize = False):
-        
-        # add decompress option... decompress self.scan, save self.scan with new PixelData and TransferSyntaxUID...? or other decompress() option?
-        # have clip_val edit arr 
-        # change PixelData to arr 
-        
+    def __init__(self, target_path, filter_by_tag = False, window_level = False, hounsfield_units = False, clip_vals = False, sort_slices = False, fix_dicoms_ = False, remove_duplicate_locations = False, select_slice_locations = False, resize = False):
         
         """
-        file_path [string]: directory location of dicom files
-        file_path [list]: list of full paths to dicom files
+        target_path [string]: directory location of dicom files
+        target_path [list]: list of full paths to dicom files
         filter_tags [dictionary]: tag/value pairs, 'max' as value selects most frequent unique tag
         window_level[bool]: True conducts window/level operation based on WindowCenter/WindowWidth/RescaleSlope/RescaleIntercept tags or defaults
         clip_vals[list]: min and max values to clip pixel array (e.g., [-250, 200])
@@ -61,22 +77,9 @@ class ReadDicom(ReadScan):
         resize[list]: [y,x] dims for 2d image resize
         """
 
-        self.sort_by = sort_by
-        self.file_path = file_path
+        self.file_loader = DicomLoader(target_path)
         
 
-
-
-        
-        self.files = self.load_files()
-
-        scan = [dcm.dcmread(file) for file in list_glob]
-        
-        if decompress:
-            scan = decompress_dicoms(scan)
-#             scan = [decompress_dicoms(file) for file in scan]
-        
-        
         if slice_locs:
             scan_locs = [file.SliceLocation for file in scan]
             scan = [scan[scan_locs.index(closest(scan_locs, loc))] for loc in slice_locs]
@@ -113,12 +116,7 @@ class ReadDicom(ReadScan):
         if sort_by:
            
                 
-        if remove_duplicates:
-            scan_fix = [scan[0]]
-            for file_num in range(1,len(scan)):
-                if abs(scan[file_num].ImagePositionPatient[2] - scan[file_num-1].ImagePositionPatient[2]) > (0.5*scan[0].SliceThickness):
-                    scan_fix.append(scan[file_num])
-            scan = scan_fix.copy()
+
 
         
         #edit so if not filter it reads the full files, otherwise it stops before pixel values, then reads pixel values after filtering
@@ -170,7 +168,7 @@ class ReadDicom(ReadScan):
         
         type_arr = arr.dtype
 
-        self.root_file = file_path
+        self.root_file = target_path
         self.root_type = 'DICOM'
         self.decompress = decompress
         #self.scan_type = 'MR', 'CT', etc.
@@ -185,18 +183,7 @@ class ReadDicom(ReadScan):
         self.rescale_intercept = rescale_intercept
         self.flip = flip_arr
         
-    def sort_by(self):
-         try:
-            if type(sort_by) == str:
-                list_sort = [getattr(file, sort_by) for file in scan]
-            elif type(sort_by) == dict:
-                (tag, ind), = sort_by.items()
-                list_sort = [getattr(file, tag)[ind] for file in scan]
-            else:
-                print('ERROR: [sort_by] enter either string or dict type as arg')
-            scan = [x for (y,x) in sorted(zip(list_sort,scan), key=lambda pair: pair[0])]
-        except Exception as e:
-            print(f'ERROR sorting: {e}')
+  
         
     def orthoview(self, windowLevel = False):
         
