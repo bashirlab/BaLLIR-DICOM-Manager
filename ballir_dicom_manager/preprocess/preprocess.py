@@ -7,6 +7,7 @@ from glob import glob
 
 from ballir_dicom_manager.directory_manager import DirManager
 from ballir_dicom_manager.file_readers.read_dicom import ReadDicom
+from ballir_dicom_manager.file_readers.read_nifti import ReadNifti
 from ballir_dicom_manager.preprocess.dicom_finder import DicomFinder
 
 class PreProcess:
@@ -64,7 +65,7 @@ class PreProcess:
             
     def preview_preprocessed_dicom(self) -> None:
 #         for clean_dicom_dir in return_dicom_dirs(self.DIR_PRE_DICOM):
-        for clean_dicom_dir in glob(os.path.join(preprocess_haste.DIRS.DIR_PRE_DICOM, '*/')):
+        for clean_dicom_dir in glob(os.path.join(self.DIRS.DIR_PRE_DICOM, '*/')):
             clean_dicom = ReadDicom(clean_dicom_dir, self.allow)
             clean_dicom.viewer.orthoview()
     
