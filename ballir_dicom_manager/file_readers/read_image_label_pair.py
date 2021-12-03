@@ -1,6 +1,8 @@
 from typing import List
+import pathlib
 
 import numpy as np
+import pydicom as dcm
 
 from ballir_dicom_manager.file_readers.read_dicom import ReadDicom
 from ballir_dicom_manager.file_viewers.rgb_viewer import RGBViewer
@@ -8,13 +10,19 @@ from ballir_dicom_manager.file_viewers.rgb_viewer import RGBViewer
 
 class ReadImageLabelPair(ReadDicom):
         
-    def __init__(self, dicom_image: ReadDicom, dicom_label: ReadDicom, transparency: float = 0.3):
-        self.dicom_image = dicom_image
-        self.dicom_label = dicom_label
+    def __init__(self, dicom_image, dicom_label, transparency: float = 0.3, allow = []):
+        self.dicom_image = self.get_file(dicom_image, allow)
+        self.dicom_label = self.get_file(dicom_label, allow)
         self.transparency = transparency
         assert dicom_image.spacing == dicom_label.spacing, f'image and label spacing is inconsistent {dicom_image.spacing}:{dicom_label.spacing}'
-        self.rgb_overlay = self.build_rgb_overlay()
-        self.viewer = RGBViewer(self.rgb_overlay, self.dicom_label.arr, dicom_image.spacing)
+        self.arr = self.build_rgb_overlay()
+        self.viewer = RGBViewer(self.arr, self.dicom_label.arr, dicom_image.spacing)
+
+    def get_file(self, path_or_file, allow) -> dcm.dataset.Dataset:
+        if isinstance(path_or_file, pathlib.Path):
+            return ReadDicom(path_or_file, allow) 
+        else: #elif isinstance(path_or_file, dcm.dataset.Dataset):
+            return path_or_file
         
     def get_label_values(self) -> List[int]:
         assert np.amin(self.dicom_label.arr) >= 0, 'negative values present in mask'
@@ -37,7 +45,6 @@ class ReadImageLabelPair(ReadDicom):
     def get_color_tuples(self, colors = ('#06b70c', '#2c2cc9', '#eaf915')) -> List[tuple]:
         return [tuple(int(color.strip('#')[i:i+2], 16) for i in (0, 2, 4)) for color in colors]
 
-    
     def color_in_labels(self, rgb_array: np.array) -> np.array:
         for i in range(3):
             for num, label_value in enumerate(self.get_label_values()):
@@ -50,7 +57,18 @@ class ReadImageLabelPair(ReadDicom):
         rgb_array = self.color_in_labels(rgb_array)
         rgb_array = np.swapaxes(rgb_array, 0, -1)
         return rgb_array
+
+    def get_voxel_size(self, dicom_file: dcm.dataset.Dataset) -> float:
+        return np.product(dicom_file.PixelSpacing[:2]) * dicom_file.SpacingBetweenSlices
+
+    def get_volume(self) -> float:
+        return sum([self.get_voxel_size(image)*np.sum(label.pixel_array) for image, label in zip(self.dicom_image.files, self.dicom_label.files)])
         
+
+# separate out into volume_calculator class?
+
+
+
 #     def validate_mask(self):
 #         return
     

@@ -9,7 +9,7 @@ from ballir_dicom_manager.exception_handling import ArgErrorType
 class FileLoader(ABC):
     """Load medical imaging data file."""
     
-    def return_file_paths(self, target_path) -> list:
+    def get_file_paths(self, target_path) -> list:
         try:
             if isinstance(target_path, str) and os.path.isdir(target_path):
                 # target directory
@@ -32,5 +32,5 @@ class FileLoader(ABC):
         """try/except block to read individual files."""
 
     def load_all_files(self, target_path: str):
-        file_paths: list = self.return_file_paths(target_path)
+        file_paths: list = self.get_file_paths(target_path)
         return [self.load_file(file_path) for file_path in file_paths]

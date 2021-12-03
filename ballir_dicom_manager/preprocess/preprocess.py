@@ -15,11 +15,11 @@ class PreProcess:
     dicom_finder = DicomFinder()
         
     def __init__(self, DIR_RAW, add_subgroup = False, allow = []):
-        RAW_DICOM_DIRS = self.dicom_finder.return_dicom_dirs(DIR_RAW)
+        self.RAW_DICOM_DIRS = self.dicom_finder.get_dicom_dirs(DIR_RAW)
         DIR_PREPROCESSED = "raw".join(DIR_RAW.split("raw")[:-1]) + "preprocessed" # join in case of 2nd "raw" dir somewhere in directory structure
         # option for images and labels?
-        DIR_PRE_DICOM = self.get_preprocessed_dir(image_type = 'dicom', add_subgroup = add_subgroup)
-        DIR_PRE_NIFTI = self.get_preprocessed_dir(image_type = 'nifti', add_subgroup = add_subgroup)
+        DIR_PRE_DICOM = self.get_preprocessed_dir(DIR_PREPROCESSED, image_type = 'dicom', add_subgroup = add_subgroup)
+        DIR_PRE_NIFTI = self.get_preprocessed_dir(DIR_PREPROCESSED, image_type = 'nifti', add_subgroup = add_subgroup)
         self.DIRS = DirManager(
             DIR_PREPROCESSED = DIR_PREPROCESSED,
             DIR_PRE_DICOM = DIR_PRE_DICOM,
@@ -27,12 +27,11 @@ class PreProcess:
         )
         self.allow = allow
         
-        
-    def get_preprocessed_dir(self, image_type: str, add_subgroup) -> pathlib.Path:
+    def get_preprocessed_dir(self, DIR_PREPROCESSED: pathlib.Path, image_type: str, add_subgroup) -> pathlib.Path:
         if add_subgroup:
-            return os.path.join(self.DIRS.DIR_PREPROCESSED, image_type, 'images', add_subgroup)
+            return os.path.join(DIR_PREPROCESSED, image_type, 'images', add_subgroup)
         else:
-            return os.path.join(self.DIRS.DIR_PREPROCESSED, image_type, 'images')
+            return os.path.join(DIR_PREPROCESSED, image_type, 'images')
         
     def clean_dicom(self, raw_dicom_dir: pathlib.Path, clean_dicom_dir: pathlib.Path) -> None:
         raw = ReadDicom(raw_dicom_dir, self.allow)
@@ -64,7 +63,7 @@ class PreProcess:
                 break
             
     def preview_preprocessed_dicom(self) -> None:
-#         for clean_dicom_dir in return_dicom_dirs(self.DIR_PRE_DICOM):
+#         for clean_dicom_dir in get_dicom_dirs(self.DIR_PRE_DICOM):
         for clean_dicom_dir in glob(os.path.join(self.DIRS.DIR_PRE_DICOM, '*/')):
             clean_dicom = ReadDicom(clean_dicom_dir, self.allow)
             clean_dicom.viewer.orthoview()

@@ -6,8 +6,8 @@ class NiftiLoader(FileLoader):
     """Load DICOM files."""
 
     def load_file(self, target_path: str):
-#         try:
-        return nib.load(target_path)
-#         except dcm.errors.InvalidDicomError as e:
-#             print(f'{target_path} is unreadable: {e}')
-#             pass 
+        try:
+            return nib.load(target_path)
+        except nib.filebasedimages.ImageFileError as e:
+            print(f'{target_path} is unreadable: {e}')
+            pass 

@@ -9,10 +9,10 @@ class DicomVolumeValidator(DicomTagParser):
         self.allow = allow
     
     def check_tag_consistent(self, dicom_files, tag: str) -> bool:
-        return len(self.return_all_tag_unique(dicom_files, tag)) == 1
+        return len(self.get_all_tag_unique(dicom_files, tag)) == 1
     
     def validate(self, dicom_files):
         if not 'SeriesNumber' in self.allow:
-            assert self.check_tag_consistent(dicom_files, 'SeriesNumber'), f'mulitple SeriesNumber values found: {self.return_all_tag_unique(dicom_files, "SeriesNumber")}'
+            assert self.check_tag_consistent(dicom_files, 'SeriesNumber'), f'mulitple SeriesNumber values found: {self.get_all_tag_unique(dicom_files, "SeriesNumber")}'
         
         

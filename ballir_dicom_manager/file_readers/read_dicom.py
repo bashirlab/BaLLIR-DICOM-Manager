@@ -2,7 +2,7 @@ import pathlib
 
 import numpy as np
 
-from ballir_dicom_manager.file_viewers import array_viewer
+from ballir_dicom_manager.file_viewers.array_viewer import ArrayViewer
 from ballir_dicom_manager.file_readers.read_image_volume import ReadImageVolume
 from ballir_dicom_manager.file_loaders.dicom_loader import DicomLoader
 from ballir_dicom_manager.preprocess.dicom_tag_parser import DicomSorter, DicomWriter, DicomTagParser

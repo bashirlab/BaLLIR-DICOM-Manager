@@ -20,11 +20,11 @@ class RGBViewer(ArrayViewer):
         return self.resize_rgb(transverse, resize_dims = resize_dims, resize_idx = (1,0))
     
     def get_sagittal(self, arr: np.array, resize_dims: List[float]) -> np.array:
-        sagittal = np.flip(np.rot90(arr[:, int(self.center_of_mass[1]), ...], k = 2, axes = (2,0)), 1)
+        sagittal = np.flip(np.rot90(arr[:, int(self.center_of_mass[0]), ...], k = 2, axes = (2,0)), 1)
         return self.resize_rgb(sagittal, resize_dims = resize_dims, resize_idx = (1,2))
     
     def get_coronal(self, arr: np.array, resize_dims: List[float]) -> np.array:
-        coronal = np.rot90(arr[:, :, int(self.center_of_mass[0]), :], k = 2, axes = (2,0))
+        coronal = np.rot90(arr[:, :, int(self.center_of_mass[1]), :], k = 2, axes = (2,0))
         return self.resize_rgb(coronal, resize_dims = resize_dims, resize_idx = (0,2))
     
     def get_center_of_mass(self) -> Tuple[float]:
