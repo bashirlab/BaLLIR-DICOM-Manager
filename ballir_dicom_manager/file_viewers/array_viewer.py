@@ -26,7 +26,7 @@ class ArrayViewer:
     
     def get_resize_dimensions(self):
         resize_dims = np.multiply(self.arr.shape, self.spacing)
-        return [int(dim) for dim in resize_dims]
+        return [abs(int(dim)) for dim in resize_dims]
     
     def get_orthogonal_slices(self):
         resize_dims = self.get_resize_dimensions()

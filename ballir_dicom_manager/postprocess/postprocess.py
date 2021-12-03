@@ -2,6 +2,7 @@ import pathlib
 import os
 import copy
 import csv
+from typing import List
 
 import numpy as np
 from glob import glob
@@ -43,24 +44,15 @@ class PostProcess:
         return os.path.join(self.DIRS.DIR_INFERENCE, ".nii.gz".join(os.path.basename(nifti_path).split("_0000.nii.gz")))
     
     def read_files(self, nifti_path: pathlib.Path):
-        nifti_image = ReadNifti(nifti_path)
-        nifti_label = ReadNifti(self.get_label_path(nifti_path))
-        dicom_image = ReadDicom(self.get_dicom_path(nifti_path), allow = self.allow)
-        dicom_label = copy.deepcopy(dicom_image)
-        return nifti_image, nifti_label, dicom_image, dicom_label
-    
-    def decompress_dicom(self, dicom_file: dcm.dataset.Dataset) -> dcm.dataset.Dataset:
-        dicom_file.file_meta.TransferSyntaxUID = "1.2.840.10008.1.2"
-        dicom_file.file_meta.is_little_endian = True
-        dicom_file.file_meta.is_implicit_VR = True
-        return dicom_file
-    
-    def copy_nifti_to_dicom(self, nifti_file: ReadNifti, dicom_file: ReadDicom) -> ReadDicom:
-        nifti_array = nifti_file.files[0].get_fdata()
-        for num, dcm_file in enumerate(dicom_file.files):
-            dcm_file = self.decompress_dicom(dcm_file)
-            dcm_file.PixelData = np.rot90(nifti_array[..., num]).astype('uint16').tobytes()
-        return dicom_file
+        nifti_read_image = ReadNifti(nifti_path)
+        nifti_read_label = ReadNifti(self.get_label_path(nifti_path))
+        dicom_read_image = ReadDicom(self.get_dicom_path(nifti_path), allow = self.allow)
+        dicom_read_label = copy.deepcopy(dicom_read_image)
+        return nifti_read_image, nifti_read_label, dicom_read_image, dicom_read_label
+   
+    def copy_nifti_to_dicom(self, nifti_read: ReadNifti, dicom_read: ReadDicom) -> ReadDicom:
+        nifti_pixel_array = np.rot90(nifti_read.files[0].get_fdata())
+        return dicom_read.writer.write_array_volume_to_dicom(self, nifti_pixel_array, dicom_read.files)
         
     def postprocess(self) -> None:
         for nifti_path in tqdm(glob(os.path.join(self.DIRS.DIR_PRE_NIFTI, '*.nii.gz')), desc = 'postprocessing...'):
@@ -75,7 +67,6 @@ class PostProcess:
     def preview_postprocessed_dicom(self) -> None:
         for postprocessed_dir in glob(os.path.join(self.DIRS.DIR_POSTPROCESS, 'images', '*/')):
             print(os.path.basename(postprocessed_dir))
-            # pair = ReadImageLabelPair
             image = ReadDicom(postprocessed_dir, allow = self.allow)
             label = ReadDicom("labels".join(postprocessed_dir.split("images")), allow = self.allow)
             pair = ReadImageLabelPair(image, label)

@@ -30,9 +30,10 @@ class QCSaver(ArrayPlotter):
 
     def concatenate(self, image_list) -> np.array:
         image_shapes = [image.shape for image in image_list]
-        resize_dims = [image_shape[1] for image_shape in image_shapes]
-        resize_dims = [(max(resize_dims), int(float(dim[1]) * (max(resize_dims)/ratio))) for dim, ratio in zip(image_shapes, resize_dims)]
+        resize_dims = [image_shape[0] for image_shape in image_shapes]
+        resize_dims = [(int(float(dim[1]) * (max(resize_dims)/ratio)), max(resize_dims)) for dim, ratio in zip(image_shapes, resize_dims)]
         image_list = [cv2.resize(image, dsize = dims, interpolation = cv2.INTER_CUBIC) for dims, image in zip(resize_dims, image_list)]
+        image_shapes = [image.shape for image in image_list]
         return np.concatenate(image_list, axis = 1)
 
     def save_orthoview(self, QC_PATH, qc_file, **kwargs) -> None:
@@ -46,6 +47,3 @@ class QCSaver(ArrayPlotter):
         for image_num in range(qc_file.arr.shape[0]):
             write_path = os.path.join(QC_PATH, f'{str(image_num).zfill(4)}.png')
             self.save_image(write_path, np.flip(np.rot90(qc_file.arr[image_num,...]), 0), **kwargs)
-
-
-
