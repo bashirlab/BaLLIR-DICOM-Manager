@@ -14,7 +14,7 @@ class PreProcess:
 
     dicom_finder = DicomFinder()
         
-    def __init__(self, DIR_RAW, add_subgroup = False, hounsfield: bool = False, value_clip = False, allow = []):
+    def __init__(self, DIR_RAW, add_subgroup = False, value_clip = False, allow = []):
         self.RAW_DICOM_DIRS = self.dicom_finder.get_dicom_dirs(DIR_RAW)
         DIR_PREPROCESSED = "raw".join(DIR_RAW.split("raw")[:-1]) + "preprocessed" # join in case of 2nd "raw" dir somewhere in directory structure
         # option for images and labels?
@@ -25,7 +25,6 @@ class PreProcess:
             DIR_PRE_DICOM = DIR_PRE_DICOM,
             DIR_PRE_NIFTI = DIR_PRE_NIFTI
         )
-        self.hounsfield = hounsfield
         self.value_clip = value_clip
         self.allow = allow
         
@@ -36,7 +35,7 @@ class PreProcess:
             return os.path.join(DIR_PREPROCESSED, image_type, 'images')
         
     def clean_dicom(self, raw_dicom_dir: pathlib.Path, clean_dicom_dir: pathlib.Path) -> None:
-        raw = ReadDicom(raw_dicom_dir, hounsfield = self.hounsfield, value_clip = self.value_clip, allow = self.allow)
+        raw = ReadDicom(raw_dicom_dir, value_clip = self.value_clip, allow = self.allow)
         raw.prep_for_nifti()
         raw.writer.save_all(raw.files, clean_dicom_dir)
     

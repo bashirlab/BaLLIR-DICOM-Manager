@@ -19,10 +19,9 @@ class ReadDicom(ReadImageVolume):
     writer = DicomWriter()
     nifti_fixer = FixDicomForNifti(fill_missing_with_adjacent = False)
     
-    def __init__(self, target_path: pathlib.Path, hounsfield: bool = False, value_clip = False, allow: list = []):
+    def __init__(self, target_path: pathlib.Path, value_clip = False, allow: list = []):
         super().__init__(target_path)  
 
-        self.hounsfield = hounsfield
         self.value_clip = value_clip
         self.files = self.sorter.sort_dicom_files(self.files)
         
@@ -77,17 +76,17 @@ class ReadDicom(ReadImageVolume):
     def convert_to_hounsfield(self):
         self.arr += np.int16(self.files[0].RescaleIntercept)
         self.arr *= np.int16(self.files[0].RescaleSlope)
-        for file in self.files:
-            file.RescaleSlope = 1.0
-            file.RescaleIntercept = 0.0
-           
+
+    def convert_from_hounsfield(self): 
+        self.arr = self.arr/np.int16(self.files[0].RescaleSlope)
+        self.arr -= np.int16(self.files[0].RescaleIntercept)
+        
     def set_arr(self) -> None:
         self.arr = np.array([file.pixel_array for file in self.files])
-        if self.hounsfield:
-            self.convert_to_hounsfield()
-            self.writer.write_array_volume_to_dicom(self.arr, self.files)
         if self.value_clip: 
+            self.convert_to_hounsfield()
             self.arr = np.clip(self.arr, self.value_clip[0], self.value_clip[1])
+            self.convert_from_hounsfield()
             self.writer.write_array_volume_to_dicom(self.arr, self.files)
         
         # if self.window_level:
