@@ -25,7 +25,7 @@ class FixDicomForNifti(DicomVolumeValidator):
         # rewrite slice locations as best
         dicom_slice_positions = self.get_all_tag_idx(dicom_files, tag = 'ImagePositionPatient', idx = 2)
 #         step_size = self.slice_manager.get_step_size(dicom_slice_positions)
-        step_size = self.slice_manager.get_step_size(dicom_files)
+        step_size = self.get_step_size(dicom_files)
         print(f'step_size: {step_size}')
         assert step_size != 0, "step size cannot be equal to zero"
         best_slice_positions = self.slice_manager.get_best_positions(dicom_slice_positions, step_size)

@@ -1,3 +1,5 @@
+from typing import List
+
 import cv2
 import numpy as np
 
@@ -11,7 +13,10 @@ class ArrayViewer:
         self.arr = arr
         self.spacing = spacing
         return
-    
+
+    def print_range(self) -> None:
+        print(f'RANGE: {np.amin(self.arr)}:{np.amax(self.arr)}')
+
     def get_transverse(self, arr, resize_dims) -> np.array:
         transverse =  np.flip(np.rot90(arr[...,int(arr.shape[2]/2)], axes = (1, 0)), 1)
         return cv2.resize(transverse, dsize = (resize_dims[1], resize_dims[0]), interpolation = cv2.INTER_CUBIC)
@@ -24,7 +29,7 @@ class ArrayViewer:
         coronal = np.rot90(arr[:, int(arr.shape[1]/2),:], axes = (0, 1))
         return cv2.resize(coronal, dsize = (resize_dims[0], resize_dims[2]), interpolation = cv2.INTER_CUBIC)
     
-    def get_resize_dimensions(self):
+    def get_resize_dimensions(self) -> List[int]:
         resize_dims = np.multiply(self.arr.shape, self.spacing)
         return [abs(int(dim)) for dim in resize_dims]
     
@@ -35,6 +40,7 @@ class ArrayViewer:
         coronal = self.get_coronal(self.arr, resize_dims)
         return transverse, sagittal, coronal
     
-    def orthoview(self, **kwargs):
+    def orthoview(self, **kwargs) -> None:
+        if 'print_range' in kwargs and kwargs['print_range']: self.print_range()
         transverse, sagittal, coronal = self.get_orthogonal_slices()
         self.plotter.plot_images([transverse, sagittal, coronal], **kwargs)

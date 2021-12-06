@@ -28,17 +28,15 @@ class SliceManager:
         offset_counts = {offset: offsets.count(offset) for offset in offsets}
         return list(offset_counts.keys())[list(offset_counts.values()).index(max(list(offset_counts.values())))]
 
-    def get_best_range(self, dicom_slice_positions: list, position_offset: float, spacing: float) -> tuple:
-        start_position = np.amin(dicom_slice_positions) - ((np.amin(dicom_slice_positions)%10) - position_offset)
-        stop_position = np.amax(dicom_slice_positions) - ((np.amax(dicom_slice_positions)%10) - position_offset)
-        if stop_position < np.amax(dicom_slice_positions): stop_position += spacing
+    def get_best_range(self, dicom_slice_positions: list, position_offset: float, step_size: float) -> tuple:
+        start_position = np.amin(dicom_slice_positions) - ((np.amin(dicom_slice_positions)%step_size) - position_offset)
+        stop_position = np.amax(dicom_slice_positions) - ((np.amax(dicom_slice_positions)%step_size) - position_offset)
+        if stop_position < np.amax(dicom_slice_positions): stop_position += step_size
         return (start_position, stop_position)
 
     def get_next_best_positions(self, dicom_slice_positions: list, best_positions: list) -> list:
         return [self.closest(dicom_slice_positions, loc) for loc in best_positions]
     
-#     def get_step_size(self, dicom_slice_positions: list) -> float:
-#         return self.most_common([round(slice_position - dicom_slice_positions[num-1], 5) for num, slice_position in enumerate(dicom_slice_positions)])
 
-    def get_step_size(self, dicom_files: list) -> float:
-        return self.most_common([float(file.SpacingBetweenSlices) for file in dicom_files])    
+        
+          

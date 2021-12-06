@@ -1,5 +1,7 @@
 from abc import abstractmethod
 
+import numpy as np
+
 from ballir_dicom_manager.file_loaders.file_loader import FileLoader
 
 class ReadImageVolume:
@@ -13,5 +15,5 @@ class ReadImageVolume:
     def build_arr(self):
         """Return numpy array with pixel values in (Z, Y, X) shape."""
         
-    def orthoview(self):
+    def orthoview(self) -> None:
         return

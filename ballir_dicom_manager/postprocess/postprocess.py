@@ -64,13 +64,13 @@ class PostProcess:
             dicom_label_write_dir = os.path.join(self.DIRS.DIR_POSTPROCESS, 'labels', os.path.basename(nifti_path.split("_0000.nii.gz")[0]))
             dicom_label.writer.save_all(dicom_label.files, dicom_label_write_dir)        
 
-    def preview_postprocessed_dicom(self) -> None:
+    def preview_postprocessed_dicom(self, **kwargs) -> None:
         for postprocessed_dir in glob(os.path.join(self.DIRS.DIR_POSTPROCESS, 'images', '*/')):
             print(os.path.basename(postprocessed_dir))
             image = ReadDicom(postprocessed_dir, allow = self.allow)
             label = ReadDicom("labels".join(postprocessed_dir.split("images")), allow = self.allow)
             pair = ReadImageLabelPair(image, label)
-            pair.viewer.orthoview()
+            pair.viewer.orthoview(**kwargs)
 
     def save_qc(self, orthoview: bool = True, **kwargs) -> None:
         for postprocessed_dir in tqdm(glob(os.path.join(self.DIRS.DIR_POSTPROCESS, 'images', '*/')), desc = f'writing QC images to {self.DIRS.DIR_QC}'):

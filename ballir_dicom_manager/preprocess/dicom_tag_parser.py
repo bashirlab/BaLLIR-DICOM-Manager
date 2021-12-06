@@ -1,6 +1,9 @@
-import os
+from typing import List
 
 import dicom2nifti
+import pydicom as dcm
+
+from ballir_dicom_manager.preprocess.slice_manager import SliceManager
 
 class DicomSorter:
     
@@ -8,6 +11,8 @@ class DicomSorter:
         return dicom2nifti.common.sort_dicoms(dicom_files)
 
 class DicomTagParser:
+
+    slice_manager = SliceManager()
     
     def __init__(self, allow = []):
         self.allow = allow
@@ -23,13 +28,6 @@ class DicomTagParser:
 
     def get_all_tag_unique_idx(self, dicom_files, tag: str, idx: int) -> list:
         return list(set(self.get_all_tag_idx(dicom_files, tag, idx)))
-    
-    def get_dicom_slice_spacing(self, dicom_files):
-        assert all([hasattr(file, 'SpacingBetweenSlices') for file in dicom_files]), 'SpacingBetweenSlices tag not present in all files'
-        dicom_slice_spacing = list(set([file.SpacingBetweenSlices for file in dicom_files]))
-        if not 'SpacingBetweenSlices' in self.allow:
-            assert len(dicom_slice_spacing) == 1, f'{len(dicom_slice_spacing)} spacings between slices detected: {dicom_slice_spacing}'
-        return dicom_slice_spacing[0]
 
     def get_dicom_pixel_spacing(self, dicom_files):
         assert all([hasattr(file, 'PixelSpacing') for file in dicom_files])
@@ -38,8 +36,20 @@ class DicomTagParser:
             assert len(dicom_pixel_spacing) == 1, f'{len(dicom_pixel_spacing)} XY spacings detected: {dicom_pixel_spacing}'
         return dicom_pixel_spacing[0]
     
-    def get_dicom_spacing(self, dicom_files):
-        return self.get_dicom_pixel_spacing(dicom_files) + [self.get_dicom_slice_spacing(dicom_files)]
+    def get_dicom_spacing(self, dicom_files: List[dcm.dataset.Dataset]):
+        return self.get_dicom_pixel_spacing(dicom_files) + [self.get_step_size(dicom_files)]
+
+    def get_step_size(self, dicom_files: List[dcm.dataset.Dataset]) -> float:
+        if all([hasattr(file, 'SpacingBetweenSlices') for file in dicom_files]):
+            return self.slice_manager.most_common(self.get_all_tag(dicom_files, tag = 'SpacingBetweenSlices'))
+        else:
+            if 'SpacingBetweenSlices' in self.allow:
+                steps_between_slice_position = self.get_all_tag_idx(dicom_files, tag = 'ImagePositionPatient', idx = 2)
+                steps_between_slice_position = [abs(steps_between_slice_position[num] - steps_between_slice_position[num-1]) for num in range(1, len(steps_between_slice_position))]
+                steps_between_slice_position = [step for step in steps_between_slice_position if step != 0]
+                return self.slice_manager.most_common(steps_between_slice_position)
+
+
 
    
     
