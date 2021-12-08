@@ -1,5 +1,9 @@
+import logging
+
 from ballir_dicom_manager.preprocess.dicom_tag_parser import DicomTagParser
 from ballir_dicom_manager.preprocess.slice_manager import SliceManager
+
+log = logging.getLogger(__name__)
 
 class DicomVolumeValidator(DicomTagParser):
     
@@ -20,27 +24,53 @@ class DicomVolumeValidator(DicomTagParser):
     def check_tag_unique_idx(self, dicom_files, tag: str, idx: int) -> bool:
         return len(self.get_all_tag_unique_idx(dicom_files, tag, idx)) == len(self.get_all_tag(dicom_files, tag))
 
-    def print_instance_count(self, dicom_files, tag: str) -> None:
+    def get_instance_count(self, dicom_files, tag: str) -> dict:
         all_tags = self.get_all_tag(dicom_files, tag)
-        print({tag: all_tags.count(tag) for tag in all_tags})
+        return {tag: all_tags.count(tag) for tag in all_tags}
 
-    def print_instance_count_idx(self, dicom_files, tag: str, idx: int) -> None:
+    def get_instance_count_idx(self, dicom_files, tag: str, idx: int) -> dict:
         all_tags = self.get_all_tag_idx(dicom_files, tag, idx)
-        print({tag: all_tags.count(tag) for tag in all_tags})
+        return {tag: all_tags.count(tag) for tag in all_tags}
 
-    def validate(self, dicom_files):
-        if not 'SeriesNumber' in self.allow:
-            assert self.check_tag_consistent(dicom_files, 'SeriesNumber'), f'mulitple SeriesNumber values found: {self.get_all_tag_unique(dicom_files, "SeriesNumber")}'
-        if not 'PixelSpacing' in self.allow:
-            assert self.check_tag_consistent_idx(dicom_files, 'PixelSpacing', 0), f'PixelSpacing in Y-dim inconsistent: {self.print_instance_count_idx(dicom_files, "PixelSpacing", 0)}'
-            assert self.check_tag_consistent_idx(dicom_files, 'PixelSpacing', 1), f'PixelSpacing in X-dim inconsistent: {self.print_instance_count_idx(dicom_files, "PixelSpacing", 1)}'
-        if not 'ImagePositionPatient' in self.allow:
-            assert self.check_tag_consistent_idx(dicom_files, 'ImagePositionPatient', 0), f'ImagePositionPatient in Y-dim inconsistent: {self.print_instance_count_idx(dicom_files, "ImagePositionPatient", 0)}'
-            assert self.check_tag_consistent_idx(dicom_files, 'ImagePositionPatient', 0), f'ImagePositionPatient in X-dim inconsistent: {self.print_instance_count_idx(dicom_files, "ImagePositionPatient", 0)}'
-            assert self.check_tag_unique_idx(dicom_files, 'ImagePositionPatient', 2), f'ImagePositionPatient Z position is non-unique: {self.print_instance_count_idx(dicom_files, "ImagePositionPatient", 2)}'
-        if not 'SpacingBetweenSlices' in self.allow:
-            assert self.check_tag_consistent(dicom_files, 'SpacingBetweenSlices'), f'SpacingBetweenSlices is non-unique: {self.print_instance_count(dicom_files, "SpacingBetweenSlices")}'
-        if not 'Modality' in self.allow:
-            assert self.check_tag_consistent(dicom_files, 'Modality'), f'Modality is non-unique: {self.print_instance_count(dicom_files, "SpacingBetweenSlices")}'
-        if not 'RescaleIntercept' in self.allow:
-            assert self.check_tag_consistent(dicom_files, 'RescaleIntercept'), f'RescaleIntercept is non-unique: {self.print_instance_count(dicom_files, "SpacingBetweenSlices")}'
+    def handle_failure(self, tag: str, warning_message: str) -> None:
+        log.warning(warning_message)
+        if not tag in self.allow:
+            assert False, warning_message
+
+    def validate(self, dicom_files) -> None:
+
+        if not self.check_tag_consistent(dicom_files, 'SeriesNumber'):
+            warning_message = f'mulitple SeriesNumber values found: {self.get_all_tag_unique(dicom_files, "SeriesNumber")}'
+            self.handle_failure('SeriesNumber', warning_message)
+
+        if not self.check_tag_consistent_idx(dicom_files, 'PixelSpacing', 0):
+            warning_message = f'PixelSpacing in Y-dim inconsistent: {self.get_instance_count_idx(dicom_files, "PixelSpacing", 0)}'
+            self.handle_failure('PixelSpacing', warning_message)
+
+        if not self.check_tag_consistent_idx(dicom_files, 'PixelSpacing', 1):
+            warning_message = f'PixelSpacing in X-dim inconsistent: {self.get_instance_count_idx(dicom_files, "PixelSpacing", 1)}'
+            self.handle_failure('PixelSpacing', warning_message)
+
+        if not self.check_tag_consistent_idx(dicom_files, 'ImagePositionPatient', 0):
+            warning_message = f'ImagePositionPatient in Y-dim inconsistent: {self.get_instance_count_idx(dicom_files, "ImagePositionPatient", 0)}'
+            self.handle_failure('ImagePositionPatient', warning_message)
+
+        if not self.check_tag_consistent_idx(dicom_files, 'ImagePositionPatient', 1):
+            warning_message = f'ImagePositionPatient in X-dim inconsistent: {self.get_instance_count_idx(dicom_files, "ImagePositionPatient", 1)}'
+            self.handle_failure('ImagePositionPatient', warning_message)
+
+        if not self.check_tag_unique_idx(dicom_files, 'ImagePositionPatient', 2):
+            warning_message = f'ImagePositionPatient Z position is non-unique: {self.get_instance_count_idx(dicom_files, "ImagePositionPatient", 2)}'
+            self.handle_failure('ImagePositionPatient', warning_message)
+
+        if not self.check_tag_consistent(dicom_files, 'SpacingBetweenSlices'):
+            warning_message = f'SpacingBetweenSlices is non-unique: {self.get_instance_count(dicom_files, "SpacingBetweenSlices")}'
+            self.handle_failure('SpacingBetweenSlices', warning_message)
+
+        if not self.check_tag_consistent(dicom_files, 'Modality'):
+            warning_message = f'Modality is non-unique: {self.get_instance_count(dicom_files, "SpacingBetweenSlices")}'
+            self.handle_failure('Modality', warning_message)
+
+        if not self.check_tag_consistent(dicom_files, 'RescaleIntercept'):
+            warning_message = f'RescaleIntercept is non-unique: {self.get_instance_count(dicom_files, "RescaleIntercept")}'
+            self.handle_failure('RescaleIntercept', warning_message)

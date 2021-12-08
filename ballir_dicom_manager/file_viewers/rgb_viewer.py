@@ -11,16 +11,16 @@ class RGBViewer(ArrayViewer):
     def __init__(self, overlay: np.array, label: np.array, spacing):
         self.arr = overlay
         self.label = label
-        self.spacing = spacing
+        self.spacing = [abs(dim) for dim in spacing] # negative spacing causes resize issues
         self.center_of_mass = self.get_center_of_mass()
 #         super().__init__(arr, spacing)
     
     def get_transverse(self, arr: np.array, resize_dims: List[float]) -> np.array:
-        transverse =  np.flip(np.rot90(arr[int(self.center_of_mass[2]), ...], axes = (1, 0)), 1)
+        transverse =  np.flip(np.rot90(arr[int(self.center_of_mass[2]), ...], axes = (1, 0)), 0)
         return self.resize_rgb(transverse, resize_dims = resize_dims, resize_idx = (1,0))
     
     def get_sagittal(self, arr: np.array, resize_dims: List[float]) -> np.array:
-        sagittal = np.flip(np.rot90(arr[:, int(self.center_of_mass[0]), ...], k = 2, axes = (2,0)), 1)
+        sagittal = np.rot90(arr[:, int(self.center_of_mass[0]), ...], k = 2, axes = (2,0))
         return self.resize_rgb(sagittal, resize_dims = resize_dims, resize_idx = (1,2))
     
     def get_coronal(self, arr: np.array, resize_dims: List[float]) -> np.array:

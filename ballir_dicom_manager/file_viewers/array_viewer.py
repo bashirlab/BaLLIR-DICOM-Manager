@@ -19,7 +19,7 @@ class ArrayViewer:
 
     def get_transverse(self, arr, resize_dims) -> np.array:
         transverse =  np.flip(np.rot90(arr[...,int(arr.shape[2]/2)], axes = (1, 0)), 1)
-        return cv2.resize(transverse, dsize = (resize_dims[1], resize_dims[0]), interpolation = cv2.INTER_CUBIC)
+        return cv2.resize(transverse, dsize = (resize_dims[0], resize_dims[1]), interpolation = cv2.INTER_CUBIC)
     
     def get_sagittal(self, arr, resize_dims) -> np.array:
         sagittal = np.flip(np.rot90(arr[int(arr.shape[0]/2),...], axes = (0, 1)), 1)
@@ -30,6 +30,8 @@ class ArrayViewer:
         return cv2.resize(coronal, dsize = (resize_dims[0], resize_dims[2]), interpolation = cv2.INTER_CUBIC)
     
     def get_resize_dimensions(self) -> List[int]:
+
+
         resize_dims = np.multiply(self.arr.shape, self.spacing)
         return [abs(int(dim)) for dim in resize_dims]
     

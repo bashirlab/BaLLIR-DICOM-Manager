@@ -11,10 +11,10 @@ import pydicom as dcm
 
 from ballir_dicom_manager.directory_manager import DirManager
 from ballir_dicom_manager.file_readers.read_nifti import ReadNifti
-from ballir_dicom_manager.file_readers.read_dicom import ReadDicom
+from ballir_dicom_manager.file_readers.read_dicom import ReadDicom, ReadRawDicom
 from ballir_dicom_manager.file_readers.read_image_label_pair import ReadImageLabelPair
-from ballir_dicom_manager.file_savers.save_measurements_to_csv import MeasurementSaver
-from ballir_dicom_manager.file_savers.save_qc_images import QCSaver
+from ballir_dicom_manager.file_writers.save_measurements_to_csv import MeasurementSaver
+from ballir_dicom_manager.file_writers.save_qc_images import QCSaver
 
 # both this and preprocess image/label combo should inheret from image_label_reader
 class PostProcess:
@@ -46,13 +46,15 @@ class PostProcess:
     def read_files(self, nifti_path: pathlib.Path):
         nifti_read_image = ReadNifti(nifti_path)
         nifti_read_label = ReadNifti(self.get_label_path(nifti_path))
-        dicom_read_image = ReadDicom(self.get_dicom_path(nifti_path), allow = self.allow)
+        dicom_read_image = ReadRawDicom(self.get_dicom_path(nifti_path), allow = self.allow)
         dicom_read_label = copy.deepcopy(dicom_read_image)
         return nifti_read_image, nifti_read_label, dicom_read_image, dicom_read_label
    
     def copy_nifti_to_dicom(self, nifti_read: ReadNifti, dicom_read: ReadDicom) -> ReadDicom:
-        nifti_pixel_array = np.rot90(nifti_read.files[0].get_fdata())
-        return dicom_read.writer.write_array_volume_to_dicom(self, nifti_pixel_array, dicom_read.files)
+        nifti_pixel_array = (nifti_read.files[0].get_fdata())
+        # nifti_pixel_array = np.rot90(nifti_read.files[0].get_fdata())
+        dicom_read.files = dicom_read.writer.write_array_volume_to_dicom(nifti_pixel_array, dicom_read.files)
+        return dicom_read
         
     def postprocess(self) -> None:
         for nifti_path in tqdm(glob(os.path.join(self.DIRS.DIR_PRE_NIFTI, '*.nii.gz')), desc = 'postprocessing...'):
@@ -62,15 +64,17 @@ class PostProcess:
             dicom_image_write_dir = os.path.join(self.DIRS.DIR_POSTPROCESS, 'images', os.path.basename(nifti_path.split("_0000.nii.gz")[0]))
             dicom_image.writer.save_all(dicom_image.files, dicom_image_write_dir)
             dicom_label_write_dir = os.path.join(self.DIRS.DIR_POSTPROCESS, 'labels', os.path.basename(nifti_path.split("_0000.nii.gz")[0]))
-            dicom_label.writer.save_all(dicom_label.files, dicom_label_write_dir)        
+            dicom_label.writer.save_all(dicom_label.files, dicom_label_write_dir)
 
     def preview_postprocessed_dicom(self, **kwargs) -> None:
-        for postprocessed_dir in glob(os.path.join(self.DIRS.DIR_POSTPROCESS, 'images', '*/')):
-            print(os.path.basename(postprocessed_dir))
+        
+        for postprocessed_dir in tqdm(glob(os.path.join(self.DIRS.DIR_POSTPROCESS, 'images', '*/')), desc = 'generating previews of postprocessed DICOM data...'):
+            case_kwargs = copy.deepcopy(kwargs)
+            if 'legend' in case_kwargs: case_kwargs['legend'].append([os.path.basename(postprocessed_dir.rstrip('/')), '#808080'])
             image = ReadDicom(postprocessed_dir, allow = self.allow)
             label = ReadDicom("labels".join(postprocessed_dir.split("images")), allow = self.allow)
             pair = ReadImageLabelPair(image, label)
-            pair.viewer.orthoview(**kwargs)
+            pair.viewer.orthoview(**case_kwargs)
 
     def save_qc(self, orthoview: bool = True, **kwargs) -> None:
         for postprocessed_dir in tqdm(glob(os.path.join(self.DIRS.DIR_POSTPROCESS, 'images', '*/')), desc = f'writing QC images to {self.DIRS.DIR_QC}'):

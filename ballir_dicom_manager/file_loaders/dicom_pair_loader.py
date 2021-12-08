@@ -19,3 +19,7 @@ class DicomPairLoader(FileLoader):
         except dcm.errors.InvalidDicomError as e:
             print(f'{target_path} is unreadable: {e}')
             pass 
+
+# Convert Nifti to DICOM... make sure we're using the correct DICOM files as templates.
+# Calculate volume by... (voxels with Spacing based on z range of mask?)... 
+# assert first slice pos minus last slice pos/slices == SpacingBetweenSlices

@@ -63,6 +63,8 @@ class ReadImageLabelPair(ReadDicom):
 
     def get_volume(self) -> float:
         return sum([self.get_voxel_size(image)*np.sum(label.pixel_array) for image, label in zip(self.dicom_image.files, self.dicom_label.files)])
+
+    
         
 
 # separate out into volume_calculator class?
