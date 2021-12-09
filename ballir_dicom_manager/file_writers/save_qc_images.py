@@ -21,7 +21,6 @@ class QCSaver(ArrayPlotter):
             self.save_full_volume(QC_PATH, qc_file, **kwargs)
 
     def save_image(self, write_path: pathlib.Path, image: np.array, **kwargs) -> None:
-        # plt.imshow(image)
         self.plot_images([image], **kwargs)
         plt.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
         plt.tight_layout()

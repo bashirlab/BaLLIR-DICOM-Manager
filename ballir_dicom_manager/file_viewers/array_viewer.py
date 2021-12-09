@@ -30,8 +30,6 @@ class ArrayViewer:
         return cv2.resize(coronal, dsize = (resize_dims[0], resize_dims[2]), interpolation = cv2.INTER_CUBIC)
     
     def get_resize_dimensions(self) -> List[int]:
-
-
         resize_dims = np.multiply(self.arr.shape, self.spacing)
         return [abs(int(dim)) for dim in resize_dims]
     

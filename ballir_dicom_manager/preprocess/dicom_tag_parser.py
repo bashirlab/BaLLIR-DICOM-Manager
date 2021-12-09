@@ -51,7 +51,7 @@ class DicomTagParser:
             return self.slice_manager.most_common(self.get_all_tag(dicom_files, tag = 'SpacingBetweenSlices'))
         else:
             if 'SpacingBetweenSlices' in self.allow:
-                log.warning('SpacingBetweenSlices missing from DICOM file data, using distance between ImagePositionPatient[2] values')
+                # log.warning('SpacingBetweenSlices missing from DICOM file data, using distance between ImagePositionPatient[2] values')
                 steps_between_slice_position = self.get_all_tag_idx(dicom_files, tag = 'ImagePositionPatient', idx = 2)
                 steps_between_slice_position = [abs(round((steps_between_slice_position[num] - steps_between_slice_position[num-1]), 5)) for num in range(1, len(steps_between_slice_position))]
                 steps_between_slice_position = [step for step in steps_between_slice_position if step != 0]
