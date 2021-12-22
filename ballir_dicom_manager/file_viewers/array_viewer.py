@@ -20,16 +20,16 @@ class ArrayViewer:
 
     def get_transverse(self, arr: np.array, resize_dims: List[int]) -> np.array:
         """Return transverse slice through center for orthogonal preview."""
-        transverse = np.flip(np.rot90(arr[..., int(arr.shape[2] / 2)], axes=(1, 0)), 1)
+        transverse = arr[..., int(arr.shape[2] / 2)]
         return cv2.resize(
             transverse,
-            dsize=(resize_dims[0], resize_dims[1]),
+            dsize=(resize_dims[1], resize_dims[0]),
             interpolation=cv2.INTER_CUBIC,
         )
 
     def get_sagittal(self, arr: np.array, resize_dims: List[int]) -> np.array:
         """Return sagittal slice through center for orthogonal preview."""
-        sagittal = np.flip(np.rot90(arr[int(arr.shape[0] / 2), ...], axes=(0, 1)), 1)
+        sagittal = np.rot90(arr[:, int(arr.shape[0] / 2), :], k=1, axes=(0, 1))
         return cv2.resize(
             sagittal,
             dsize=(resize_dims[1], resize_dims[2]),
@@ -38,7 +38,7 @@ class ArrayViewer:
 
     def get_coronal(self, arr: np.array, resize_dims: List[int]) -> np.array:
         """Return coronal slice through center for orthogonal preview."""
-        coronal = np.rot90(arr[:, int(arr.shape[1] / 2), :], axes=(0, 1))
+        coronal = np.rot90(arr[int(arr.shape[1] / 2), ...], k=1, axes=(0, 1))
         return cv2.resize(
             coronal,
             dsize=(resize_dims[0], resize_dims[2]),
@@ -62,4 +62,4 @@ class ArrayViewer:
         if "print_range" in kwargs and kwargs["print_range"]:
             self.print_range()
         transverse, sagittal, coronal = self.get_orthogonal_slices()
-        self.plotter.plot_images([transverse, sagittal, coronal], **kwargs)
+        self.plotter.plot_images([transverse, coronal, sagittal], **kwargs)

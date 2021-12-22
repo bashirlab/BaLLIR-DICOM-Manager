@@ -33,7 +33,6 @@ class DicomVolumeValidator(DicomTagParser):
         log.warning(f"Resizing all arrays to shape: {best_shape}")
         pixel_data = []
         for file in dicom_files:
-
             pixel_data.append(
                 cv2.resize(
                     file.pixel_array,
@@ -108,11 +107,12 @@ class DicomVolumeValidator(DicomTagParser):
 
     def validate_arr(self, dicom_files: List[dcm.dataset.Dataset]):
         if self.check_subtag_consistent(dicom_files, "pixel_array", "shape"):
-            return dicom_files, np.array([file.pixel_array for file in dicom_files])
+            return dicom_files, np.dstack([file.pixel_array for file in dicom_files])
         else:
             warning_message = f'pixel_array.shape is non-unique: {self.get_instance_count_sub(dicom_files, "pixel_array", "shape")}'
             self.handle_failure("pixel_array.shape", warning_message)
-            return self.conform_array_shape(dicom_files)
+            dicom_files, pixel_array = self.conform_array_shape(dicom_files)
+            return dicom_files, np.dstack(pixel_array)
 
     def validate(self, dicom_files: List[dcm.dataset.Dataset]) -> None:
         """

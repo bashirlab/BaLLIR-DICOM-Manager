@@ -19,20 +19,25 @@ class RGBViewer(ArrayViewer):
     #         super().__init__(arr, spacing)
 
     def get_transverse(self, arr: np.array, resize_dims: List[float]) -> np.array:
-        transverse = np.rot90(arr[int(self.center_of_mass[2]), ...], k=3, axes=(1, 0))
-        return self.resize_rgb(transverse, resize_dims=resize_dims, resize_idx=(1, 0))
-
-    def get_sagittal(self, arr: np.array, resize_dims: List[float]) -> np.array:
-        sagittal = np.rot90(arr[:, int(self.center_of_mass[0]), ...], k=2, axes=(2, 0))
-        sagittal = sagittal[:, :, ::-1]  # RGB TO BGR...required for some reason?
-        return self.resize_rgb(sagittal, resize_dims=resize_dims, resize_idx=(1, 2))
+        """Return transverse slice through center of ROI."""
+        transverse = arr[int(self.center_of_mass[2]), ...]
+        # return self.resize_rgb(transverse, resize_dims=resize_dims, resize_idx=(1, 0))
+        return self.resize_rgb(transverse, resize_dims=resize_dims, resize_idx=(0, 1))
 
     def get_coronal(self, arr: np.array, resize_dims: List[float]) -> np.array:
-        coronal = np.rot90(arr[:, :, int(self.center_of_mass[1]), :], k=2, axes=(2, 0))
-        coronal = coronal[:, :, ::-1]  # RGB TO BGR...required for some reason?
-        return self.resize_rgb(coronal, resize_dims=resize_dims, resize_idx=(0, 2))
+        """Return sagittal slice through center of ROI."""
+        coronal = np.flip(arr[:, int(self.center_of_mass[0]), ...], 0)
+        # coronal = coronal[:, :, ::-1]  # RGB TO BGR...required for some reason?
+        return self.resize_rgb(coronal, resize_dims=resize_dims, resize_idx=(1, 2))
+
+    def get_sagittal(self, arr: np.array, resize_dims: List[float]) -> np.array:
+        """Return coronal slice through center of ROI."""
+        sagittal = np.flip(arr[:, :, int(self.center_of_mass[1]), :], 0)
+        # sagittal = sagittal[:, :, ::-1]  # RGB TO BGR...required for some reason?
+        return self.resize_rgb(sagittal, resize_dims=resize_dims, resize_idx=(0, 2))
 
     def get_center_of_mass(self, label: np.array) -> Tuple[float]:
+        """Return center idx of ROI."""
         flat_label = np.copy(label)
         flat_label[flat_label > 1] = 1
         if np.amax(flat_label) > 0:
@@ -44,6 +49,7 @@ class RGBViewer(ArrayViewer):
     def resize_rgb(
         self, arr: np.array, resize_dims: Tuple[float], resize_idx: Tuple[int]
     ) -> np.array:
+        """Resize RGB slice so pixel spacing is accounted for."""
         resized_rgb = np.zeros(
             [resize_dims[resize_idx[1]], resize_dims[resize_idx[0]], 3]
         )
@@ -56,5 +62,6 @@ class RGBViewer(ArrayViewer):
         return resized_rgb.astype("uint8")
 
     def get_resize_dimensions(self):
+        """Return voxel size for resizing orthogonal slices."""
         resize_dims = np.multiply(list(reversed(self.arr.shape[:-1])), self.spacing)
         return [int(dim) for dim in resize_dims]

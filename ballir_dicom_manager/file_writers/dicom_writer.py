@@ -39,10 +39,33 @@ class DicomWriter:
         self, pixel_array_volume: np.array, dicom_files: List[dcm.dataset.Dataset]
     ) -> List[dcm.dataset.Dataset]:
         """Write 3d preprocessed pixel array to list of DICOM files."""
-        pixel_array_volume = np.swapaxes(pixel_array_volume, 2, 0)
         assert pixel_array_volume is not None, "pixel_array value cannot be None"
         for num, dicom_file in enumerate(dicom_files):
             dicom_file = self.write_array_to_dicom(
-                pixel_array_volume[num, ...], dicom_file
+                pixel_array_volume[..., num], dicom_file
             )
         return dicom_files
+
+    # def write_array_volume_to_dicom(
+    #     self, pixel_array_volume: np.array, dicom_files: List[dcm.dataset.Dataset]
+    # ) -> List[dcm.dataset.Dataset]:
+    #     """Write 3d preprocessed pixel array to list of DICOM files."""
+    #     pixel_array_volume = np.swapaxes(pixel_array_volume, 2, 0)
+    #     assert pixel_array_volume is not None, "pixel_array value cannot be None"
+    #     for num, dicom_file in enumerate(dicom_files):
+    #         dicom_file = self.write_array_to_dicom(
+    #             pixel_array_volume[num, ...], dicom_file
+    #         )
+    #     return dicom_files
+
+    # def write_array_volume_to_new_dicom(
+    #     self, pixel_array_volume: np.array, dicom_files: List[dcm.dataset.Dataset]
+    # ) -> List[dcm.dataset.Dataset]:
+    #     """Write 3d preprocessed pixel array to list of DICOM files."""
+    #     pixel_array_volume = np.swapaxes(pixel_array_volume, 2, 0)
+    #     assert pixel_array_volume is not None, "pixel_array value cannot be None"
+    #     for num, dicom_file in enumerate(dicom_files):
+    #         dicom_file = self.write_array_to_dicom(
+    #             pixel_array_volume[num, ...], dicom_file
+    #         )
+    #     return dicom_files

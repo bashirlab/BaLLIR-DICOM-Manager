@@ -97,7 +97,7 @@ class PostProcess:
         self, nifti_read: ReadNifti, dicom_read: ReadDicom, rescale: bool = False
     ) -> ReadDicom:
         """Copy pixel data from segmentation output NIFTI file to original (raw path) DICOM meta data."""
-        nifti_pixel_array = nifti_read.files[0].get_fdata()
+        nifti_pixel_array = np.rot90(nifti_read.files[0].get_fdata(), k=1, axes=(0, 1))
         if rescale:
             nifti_pixel_array = self.undo_dicom2nifti_rescale(
                 pixel_data=nifti_pixel_array, dicom_files=dicom_read.files
@@ -116,8 +116,11 @@ class PostProcess:
                 nifti_path
             )
             # dicom_image = self.copy_nifti_to_dicom(nifti_image, dicom_image, rescale=True)
+            # dicom_image.files = dicom_image.writer.write_array_volume_to_dicom(
+            #     np.flip(dicom_image.arr, 1), dicom_image.files
+            # )
             dicom_image.files = dicom_image.writer.write_array_volume_to_dicom(
-                np.flip(dicom_image.arr, 1), dicom_image.files
+                dicom_image.arr, dicom_image.files
             )
 
             dicom_label = self.copy_nifti_to_dicom(nifti_label, dicom_label)
@@ -165,7 +168,6 @@ class PostProcess:
             glob(os.path.join(self.DIRS.DIR_POSTPROCESS, "images", "*/")),
             desc=f"writing QC images to {self.DIRS.DIR_QC}",
         ):
-            print(f"processing: {postprocessed_dir}")
             image = ReadDicom(
                 postprocessed_dir, allow=self.allow, value_clip=value_clip
             )

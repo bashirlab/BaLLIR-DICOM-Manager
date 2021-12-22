@@ -57,7 +57,6 @@ class QCSaver(ArrayPlotter):
             os.makedirs(QC_PATH)
         for image_num in range(qc_file.arr.shape[0]):
             write_path = os.path.join(QC_PATH, f"{str(image_num).zfill(4)}.png")
-            # self.save_image(write_path, np.flip(np.rot90(qc_file.arr[image_num,...]), 0), **kwargs)
             self.save_image(
                 write_path,
                 np.rot90(qc_file.arr[image_num, ...], k=1, axes=(0, 1)),

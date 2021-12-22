@@ -25,7 +25,7 @@ class ReadImageLabelPair(ReadDicom):
         assert (
             read_dicom_image.spacing == read_dicom_label.spacing
         ), f"image and label spacing is inconsistent {read_dicom_image.spacing}:{read_dicom_label.spacing}"
-
+        self.spacing = read_dicom_image.spacing
         self.arr = self.build_rgb_overlay(**kwargs)
         self.viewer = RGBViewer(
             self.arr, self.read_dicom_label.arr, read_dicom_image.spacing
@@ -50,11 +50,9 @@ class ReadImageLabelPair(ReadDicom):
                 for color in colors
             ]
 
-    def get_label_values(self) -> List[int]:
-        assert (
-            np.amin(self.read_dicom_label.arr) >= 0
-        ), "negative values present in mask"
-        return np.unique(self.read_dicom_label.arr[self.read_dicom_label.arr > 0])
+    def get_label_values(self, dicom_label: np.array) -> List[int]:
+        assert np.amin(dicom_label) >= 0, "negative values present in mask"
+        return np.unique(dicom_label[dicom_label > 0])
 
     def normalize_image(self, grayscale_array: np.array) -> np.array:
         normalized_array = (grayscale_array - np.amin(grayscale_array)) / (
@@ -69,30 +67,34 @@ class ReadImageLabelPair(ReadDicom):
             [np.copy(self.normalize_image(grayscale_array)) for i in range(3)]
         )
 
-    def dampen_mask_regions(self, rgb_array: np.array) -> np.array:
+    def dampen_mask_regions(
+        self, rgb_array: np.array, dicom_label: np.array
+    ) -> np.array:
         """Reduce grayscale values in masked areas to allow for transparency stuffs."""
         for i in range(3):
-            rgb_array[i, ...][self.read_dicom_label.arr > 0] = (
-                rgb_array[i, ...][self.read_dicom_label.arr > 0]
-                - rgb_array[i, ...][self.read_dicom_label.arr > 0] * self.transparency
+            rgb_array[i, ...][dicom_label > 0] = (
+                rgb_array[i, ...][dicom_label > 0]
+                - rgb_array[i, ...][dicom_label > 0] * self.transparency
             )
         return rgb_array
 
-    def color_in_labels(self, rgb_array: np.array) -> np.array:
+    def color_in_labels(self, rgb_array: np.array, label_array: np.array) -> np.array:
         """Color in mask regions with designated color scheme."""
+        # print(f"array shape: {rgb_array.shape}")
+        # print(f"colors: {self.colors}")
+        # print(f"transparency: {self.transparency}")
+        # print(f"label values: {self.get_label_values(label_array)}")
         for i in range(3):
-            for num, label_value in enumerate(self.get_label_values()):
-                rgb_array[i, ...][self.read_dicom_label.arr == label_value] = rgb_array[
-                    i, ...
-                ][self.read_dicom_label.arr == label_value] + (
-                    self.colors[num][i] * self.transparency
-                )
+            for num, label_value in enumerate(self.get_label_values(label_array)):
+                rgb_array[i, ...][label_array == label_value] = rgb_array[i, ...][
+                    label_array == label_value
+                ] + (self.colors[num][i] * self.transparency)
         return rgb_array
 
     def build_rgb_overlay(self, **kwargs) -> np.array:
         rgb_array = self.convert_grayscale_to_rgb(self.read_dicom_image.arr)
-        rgb_array = self.dampen_mask_regions(rgb_array)
-        rgb_array = self.color_in_labels(rgb_array)
+        rgb_array = self.dampen_mask_regions(rgb_array, self.read_dicom_label.arr)
+        rgb_array = self.color_in_labels(rgb_array, self.read_dicom_label.arr)
         if "side_by_side" in kwargs and kwargs["side_by_side"]:
             gray_array = self.convert_grayscale_to_rgb(self.read_dicom_image.arr)
             rgb_array = np.concatenate((gray_array, rgb_array), axis=1)

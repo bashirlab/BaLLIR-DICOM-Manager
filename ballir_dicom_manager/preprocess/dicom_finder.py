@@ -7,18 +7,19 @@ from tqdm import tqdm
 import pydicom as dcm
 
 
-def test_fn():
-    pass
-
-
 class DicomFinder:
     def attempt_dicom_read(self, possible_dicom_path: pathlib.Path):
+        if (
+            "DICOMDIR" in os.path.basename(possible_dicom_path)
+            or os.path.splitext(possible_dicom_path)[-1] == ".txt"
+        ):
+            return False
         try:
             with open(possible_dicom_path, "rb") as fp:
                 dcm.filereader.read_preamble(fp, False)
             return possible_dicom_path
         except dcm.errors.InvalidDicomError:
-            pass
+            return False
 
     def get_all_file_paths(self, target_directory: pathlib.Path) -> List[pathlib.Path]:
         """Return paths to all non-dir files."""

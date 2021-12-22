@@ -20,7 +20,7 @@ class ReadNifti(ReadImageVolume):
         self.set_arr()
 
     def set_arr(self):
-        self.arr = np.flip(self.files[0].get_fdata(), 1)
+        self.arr = np.rot90(self.files[0].get_fdata(), k=1, axes=(0, 1))  #
         if self.value_clip:
             self.arr = np.clip(self.arr, self.value_clip[0], self.value_clip[1])
         self.viewer = ArrayViewer(self.arr, self.spacing)

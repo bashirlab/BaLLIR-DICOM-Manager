@@ -62,7 +62,7 @@ class ReadDicom(ReadImageVolume):
     ) -> np.array:
 
         """Have to do slice by slice for instances where RescaleIntercept varies across volume."""
-        for slice_num in range(pixel_array.shape[0]):
+        for slice_num in range(pixel_array.shape[-1]):
             if (
                 "Modality" in dicom_files[slice_num]
                 and dicom_files[slice_num].Modality in value_clip
@@ -70,8 +70,8 @@ class ReadDicom(ReadImageVolume):
                 slice_value_clip = self.convert_clip_range_to_hounsfield(
                     value_clip[dicom_files[slice_num].Modality], dicom_files[slice_num]
                 )
-                pixel_array[slice_num, ...] = np.clip(
-                    pixel_array[slice_num, ...],
+                pixel_array[..., slice_num] = np.clip(
+                    pixel_array[..., slice_num],
                     slice_value_clip[0],
                     slice_value_clip[1],
                 )
@@ -79,10 +79,10 @@ class ReadDicom(ReadImageVolume):
 
     def set_arr(self) -> None:
         """ "Set or reset self.arr as preprocessed pixel_array. Should be reset after any array modifications prior to saving."""
+
         self.files, self.arr = self.validator.validate_arr(self.files)
         if self.value_clip:
             self.arr = self.clip_pixel_array(self.files, self.value_clip, self.arr)
-        self.arr = np.swapaxes(self.arr, 0, 2)
         self.viewer = ArrayViewer(self.arr, self.spacing)
         self.writer.write_array_volume_to_dicom(self.arr, self.files)
 
